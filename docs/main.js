@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameScreen = document.getElementById('game-screen');
     const withdrawScreen = document.getElementById('withdraw-screen');
     const goToWithdrawBtn = document.getElementById('go-to-withdraw');
-    const backButton = document.querySelector('#withdraw-screen .back-button');
+    const backButton = document.getElementById('back-from-withdraw'); // ИСПРАВЛЕНО: Выбор по ID
     const notification = document.getElementById('notification');
     const successModal = document.getElementById('success-modal');
 
