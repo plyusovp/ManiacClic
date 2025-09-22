@@ -27,9 +27,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameScreen = document.getElementById('game-screen');
     const withdrawScreen = document.getElementById('withdraw-screen');
     const goToWithdrawBtn = document.getElementById('go-to-withdraw');
-    const backButton = document.getElementById('back-from-withdraw'); // ИСПРАВЛЕНО: Выбор по ID
+    const backButton = document.getElementById('back-from-withdraw');
     const notification = document.getElementById('notification');
     const successModal = document.getElementById('success-modal');
+    const balanceCounter = document.getElementById('balance-counter');
+
+    // --- ОСНОВНАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ UI ---
+    // ИСПРАВЛЕНО: Функция вынесена в общую область видимости
+    function updateBalanceUI() {
+        if (balanceCounter) {
+            balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
+        const withdrawBalance = document.getElementById('withdraw-balance');
+        if (withdrawBalance) {
+            withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
+    }
+
 
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
@@ -39,12 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     goToWithdrawBtn.addEventListener('click', () => {
-        initWithdrawPage(); // Обновляем данные на странице вывода каждый раз при переходе
+        initWithdrawPage();
         showScreen(withdrawScreen);
     });
 
     backButton.addEventListener('click', () => {
-        updateBalanceUI(); // Обновляем баланс на главном экране
+        updateBalanceUI();
         showScreen(gameScreen);
     });
 
@@ -76,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Инициализация игрового экрана
     function initGamePage() {
-        const balanceCounter = document.getElementById('balance-counter');
         const clickableStar = document.getElementById('clickable-star');
         const energyBar = document.getElementById('energy-bar');
         const energyCounter = document.getElementById('energy-counter');
@@ -111,10 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
             }
         }, config.energyRegenInterval);
-
-        window.updateBalanceUI = function() {
-            balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
-        }
 
         function updateEnergyUI() {
             const percentage = (gameState.energy / config.maxEnergy) * 100;
@@ -160,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Инициализация страницы вывода (вызывается при переходе)
     function initWithdrawPage() {
-        const withdrawBalance = document.getElementById('withdraw-balance');
         const slider = document.getElementById('withdraw-slider');
         const calcAmount = document.getElementById('calc-amount');
         const calcCommission = document.getElementById('calc-commission');
@@ -168,8 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const calcBotStars = document.getElementById('calc-bot-stars');
         const withdrawButton = document.getElementById('withdraw-button');
 
+        updateBalanceUI(); // Обновляем баланс на странице вывода
         const userBalance = Math.floor(gameState.balance);
-        withdrawBalance.innerText = userBalance.toLocaleString('ru-RU');
 
         const maxWithdraw = Math.floor(userBalance / 200) * 200;
         slider.max = maxWithdraw > 0 ? maxWithdraw : 200;
@@ -254,3 +262,4 @@ document.addEventListener('DOMContentLoaded', () => {
     initGamePage();
     showScreen(gameScreen);
 });
+
