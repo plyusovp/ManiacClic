@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
+    let animationFrameId = null; // Переменная для управления циклом анимации
     
     // Переменные для плавной анимации
     const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
@@ -64,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (goToWithdrawBtn) {
         goToWithdrawBtn.addEventListener('click', () => {
-            stopEnergyRegen(); 
+            stopEnergyRegen();
+            stopThreeJSScene(); // Останавливаем 3D-сцену
             initWithdrawPage();
             showScreen(withdrawScreen);
         });
@@ -74,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backButton.addEventListener('click', () => {
             updateBalanceUI();
             startEnergyRegen(); 
+            initThreeJSScene(); // Заново инициализируем и запускаем 3D-сцену
             showScreen(gameScreen);
         });
     }
@@ -197,6 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('star-container');
         if (!container || !window.THREE) return;
 
+        // Если сцена уже существует, просто запускаем анимацию
+        if (scene) {
+            animate();
+            return;
+        }
+
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.z = 5;
@@ -229,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 starMesh.rotation.set(baseRotation.x, baseRotation.y, baseRotation.z);
                 
                 scene.add(starMesh);
+                animate(); // Запускаем анимацию только после загрузки модели
             },
             undefined,
             function (error) {
@@ -239,43 +249,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 starMesh.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
                 starMesh.rotation.set(baseRotation.x, baseRotation.y, baseRotation.z);
                 scene.add(starMesh);
+                animate(); // Запускаем анимацию, даже если модель не загрузилась
             }
         );
-        
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (starMesh) {
-                // Плавное изменение размера и вращения
-                starMesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
-                starMesh.rotation.x = THREE.MathUtils.lerp(starMesh.rotation.x, targetRotation.x, 0.1);
-                starMesh.rotation.y = THREE.MathUtils.lerp(starMesh.rotation.y, targetRotation.y, 0.1);
-                starMesh.rotation.z = THREE.MathUtils.lerp(starMesh.rotation.z, targetRotation.z, 0.1);
-            }
-
-            if(pointLight){
-                colorPhase = (Math.sin(Date.now() * 0.0005) + 1) / 2;
-                const newColor = new THREE.Color();
-                newColor.lerpColors(colorStart, colorEnd, colorPhase);
-                pointLight.color = newColor;
-            }
-
-            // Плавное изменение цвета фона
-            const bgElement = document.body; // or document.getElementById('game-screen');
-            if(bgElement) {
-                const newBgColor = new THREE.Color();
-                newBgColor.lerpColors(bgColorStart, bgColorEnd, colorPhase);
-                bgElement.style.backgroundColor = `#${newBgColor.getHexString()}`;
-            }
-
-            renderer.render(scene, camera);
-        }
-        animate();
         
         if (renderer.domElement) {
             renderer.domElement.addEventListener('click', onStarClick, false);
         }
         window.addEventListener('resize', onWindowResize, false);
+    }
+    
+    // Функция для остановки цикла анимации
+    function stopThreeJSScene() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+
+    function animate() {
+        animationFrameId = requestAnimationFrame(animate);
+
+        if (starMesh) {
+            // Плавное изменение размера и вращения
+            starMesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+            starMesh.rotation.x = THREE.MathUtils.lerp(starMesh.rotation.x, targetRotation.x, 0.1);
+            starMesh.rotation.y = THREE.MathUtils.lerp(starMesh.rotation.y, targetRotation.y, 0.1);
+            starMesh.rotation.z = THREE.MathUtils.lerp(starMesh.rotation.z, targetRotation.z, 0.1);
+        }
+
+        if(pointLight){
+            colorPhase = (Math.sin(Date.now() * 0.0005) + 1) / 2;
+            const newColor = new THREE.Color();
+            newColor.lerpColors(colorStart, colorEnd, colorPhase);
+            pointLight.color = newColor;
+        }
+
+        // Плавное изменение цвета фона
+        const bgElement = document.body; // or document.getElementById('game-screen');
+        if(bgElement) {
+            const newBgColor = new THREE.Color();
+            newBgColor.lerpColors(bgColorStart, bgColorEnd, colorPhase);
+            bgElement.style.backgroundColor = `#${newBgColor.getHexString()}`;
+        }
+
+        renderer.render(scene, camera);
     }
 
     function onStarClick(event) {
@@ -342,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!withdrawBalance || !withdrawButtonsContainer || !withdrawStatusText || !withdrawInfo || !withdrawConfirmBtn) {
             console.error("One or more withdrawal page elements not found.");
-            // Можно добавить здесь логику для показа сообщения об ошибке пользователю
             return;
         }
 
@@ -432,6 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateBalanceUI();
                     showScreen(gameScreen);
                     startEnergyRegen();
+                    initThreeJSScene();
                 }, 3000);
             }
         };
