@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const successModal = document.getElementById('success-modal');
     const balanceCounter = document.getElementById('balance-counter');
     const energyBar = document.getElementById('energy-bar');
-    const energyCounter = document = document.getElementById('energy-counter');
-    
+    const energyCounter = document.getElementById('energy-counter'); // Исправлена опечатка
+
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
@@ -57,22 +57,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
-        gameScreen.classList.add('hidden');
-        withdrawScreen.classList.add('hidden');
-        screen.classList.remove('hidden');
+        if (gameScreen) gameScreen.classList.add('hidden');
+        if (withdrawScreen) withdrawScreen.classList.add('hidden');
+        if (screen) screen.classList.remove('hidden');
     }
 
-    goToWithdrawBtn.addEventListener('click', () => {
-        stopEnergyRegen(); 
-        initWithdrawPage();
-        showScreen(withdrawScreen);
-    });
+    if (goToWithdrawBtn) {
+        goToWithdrawBtn.addEventListener('click', () => {
+            stopEnergyRegen(); 
+            initWithdrawPage();
+            showScreen(withdrawScreen);
+        });
+    }
 
-    backButton.addEventListener('click', () => {
-        updateBalanceUI();
-        startEnergyRegen(); 
-        showScreen(gameScreen);
-    });
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            updateBalanceUI();
+            startEnergyRegen(); 
+            showScreen(gameScreen);
+        });
+    }
 
     // --- СОХРАНЕНИЕ / ЗАГРУЗКА ---
     function saveState() {
@@ -114,8 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function updateEnergyUI() {
         const percentage = (gameState.energy / config.maxEnergy) * 100;
-        energyBar.style.width = `${percentage}%`;
-        energyCounter.innerText = `${Math.floor(gameState.energy)}/${config.maxEnergy}`;
+        if (energyBar) {
+            energyBar.style.width = `${percentage}%`;
+        }
+        if (energyCounter) {
+            energyCounter.innerText = `${Math.floor(gameState.energy)}/${config.maxEnergy}`;
+        }
     }
 
     function checkEnergy() {
@@ -187,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ЛОГИКА THREE.JS ---
     function initThreeJSScene() {
         const container = document.getElementById('star-container');
-        if (!container || !THREE) return;
+        if (!container || !window.THREE) return;
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
@@ -264,7 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         animate();
         
-        renderer.domElement.addEventListener('click', onStarClick, false);
+        if (renderer.domElement) {
+            renderer.domElement.addEventListener('click', onStarClick, false);
+        }
         window.addEventListener('resize', onWindowResize, false);
     }
 
@@ -275,6 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const container = document.getElementById('star-container');
+        if (!container) return;
+        
         const rect = container.getBoundingClientRect();
         const mouse = new THREE.Vector2(
             ((event.clientX - rect.left) / rect.width) * 2 - 1,
@@ -321,12 +333,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ ВЫВОДА ---
     function initWithdrawPage() {
+        // Проверяем, существуют ли все необходимые элементы
         const withdrawBalance = document.getElementById('withdraw-balance');
         const withdrawButtonsContainer = document.getElementById('withdraw-buttons-container');
         const withdrawStatusText = document.getElementById('withdraw-status-text');
         const withdrawInfo = document.getElementById('withdraw-info');
         const withdrawConfirmBtn = document.getElementById('withdraw-confirm-button');
         
+        if (!withdrawBalance || !withdrawButtonsContainer || !withdrawStatusText || !withdrawInfo || !withdrawConfirmBtn) {
+            console.error("One or more withdrawal page elements not found.");
+            // Можно добавить здесь логику для показа сообщения об ошибке пользователю
+            return;
+        }
+
         const withdrawAmounts = [200, 400, 600, 800, 1000, 1600, 2200];
         const userBalance = Math.floor(gameState.balance);
         let selectedAmount = 0;
@@ -345,31 +364,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Обновление UI вывода
         function updateWithdrawUI(amount, isMax = false) {
             selectedAmount = amount;
-            if (isMax) {
-                const commission = amount * getCommission(amount);
-                const totalDeducted = amount + commission;
-                withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
-            } else {
-                const commission = amount * getCommission(amount);
-                const totalDeducted = amount + commission;
-                withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
-            }
+            const commission = amount * getCommission(amount);
+            const totalDeducted = amount + commission;
+
+            withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
+
             withdrawInfo.classList.remove('hidden');
-            if (withdrawConfirmBtn) {
-                withdrawConfirmBtn.classList.remove('hidden');
-                withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
-            }
+            withdrawConfirmBtn.classList.remove('hidden');
+            withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
         }
 
         // Проверка дневного лимита
-        if (withdrawConfirmBtn) {
-            withdrawConfirmBtn.disabled = true;
-        }
+        withdrawConfirmBtn.disabled = true;
         withdrawButtonsContainer.innerHTML = '';
         withdrawInfo.classList.add('hidden');
-        if (withdrawConfirmBtn) {
-            withdrawConfirmBtn.classList.add('hidden');
-        }
+        withdrawConfirmBtn.classList.add('hidden');
 
         if (gameState.withdrawalsToday.count >= 2) {
             withdrawStatusText.innerText = `Вы достигли дневного лимита операций на сегодня (2/2). Попробуйте завтра.`;
@@ -397,37 +406,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Логика подтверждения вывода
-        if (withdrawConfirmBtn) {
-            withdrawConfirmBtn.onclick = () => {
-                if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
-                const amount = selectedAmount;
-                const commissionRate = getCommission(amount);
-                const commission = Math.round(amount * commissionRate);
-                const totalDeducted = amount + commission;
+        withdrawConfirmBtn.onclick = () => {
+            if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
+            const amount = selectedAmount;
+            const commissionRate = getCommission(amount);
+            const commission = Math.round(amount * commissionRate);
+            const totalDeducted = amount + commission;
 
-                if (totalDeducted <= userBalance) {
-                    const botStars = amount / 200;
-                    const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
-                    try {
-                        tg.sendData(JSON.stringify(jsonData));
-                    } catch(e) { console.error("Couldn't send data to Telegram", e); }
+            if (totalDeducted <= userBalance) {
+                const botStars = amount / 200;
+                const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
+                try {
+                    tg.sendData(JSON.stringify(jsonData));
+                } catch(e) { console.error("Couldn't send data to Telegram", e); }
 
-                    gameState.balance -= totalDeducted;
-                    gameState.withdrawalsToday.count++;
-                    saveState();
+                gameState.balance -= totalDeducted;
+                gameState.withdrawalsToday.count++;
+                saveState();
 
-                    document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
-                    successModal.classList.remove('hidden');
+                document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
+                successModal.classList.remove('hidden');
 
-                    setTimeout(() => {
-                        successModal.classList.add('hidden');
-                        updateBalanceUI();
-                        showScreen(gameScreen);
-                        startEnergyRegen();
-                    }, 3000);
-                }
-            };
-        }
+                setTimeout(() => {
+                    successModal.classList.add('hidden');
+                    updateBalanceUI();
+                    showScreen(gameScreen);
+                    startEnergyRegen();
+                }, 3000);
+            }
+        };
 
         if (withdrawBalance) {
             withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
@@ -436,8 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ОБЩИЕ ФУНКЦИИ И ЗАПУСК ---
     function showNotification() {
-        notification.classList.remove('hidden');
-        setTimeout(() => notification.classList.add('hidden'), 3000);
+        if (notification) {
+            notification.classList.remove('hidden');
+            setTimeout(() => notification.classList.add('hidden'), 3000);
+        }
     }
 
     function createBackgroundStars() {

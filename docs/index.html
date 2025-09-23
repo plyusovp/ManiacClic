@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- ИЗМЕНЕНО: Подключаем THREE.js и загрузчик для 3D-моделей (GLTFLoader) -->
+    <!-- Подключаем THREE.js и загрузчик для 3D-моделей (GLTFLoader) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
@@ -29,7 +29,7 @@
 
             <!-- Центральный элемент: Контейнер для 3D-звезды -->
             <div class="star-wrapper">
-                <!-- ИЗМЕНЕНО: Теперь это контейнер для 3D-сцены -->
+                <!-- Контейнер для 3D-сцены -->
                 <div id="star-container"></div>
             </div>
 
@@ -68,31 +68,15 @@
                 <span id="withdraw-balance">0</span>
             </div>
 
-            <div class="slider-group">
-                <label for="withdraw-slider">Сумма к выводу</label>
-                <input type="range" id="withdraw-slider" min="200" max="200" step="200" value="200">
+            <!-- Контейнер для кнопок, создаваемых динамически -->
+            <div id="withdraw-buttons-container" class="withdraw-buttons-container"></div>
+            
+            <!-- Статус и информация о выводе -->
+            <div id="withdraw-info" class="withdraw-info hidden">
+                <p id="withdraw-status-text" class="status-text"></p>
+                <button id="withdraw-confirm-button" class="nav-button hidden">Подтвердить</button>
             </div>
-
-            <div class="calculator">
-                <div class="calc-row">
-                    <span>Сумма к выводу:</span>
-                    <span id="calc-amount">✨ 200</span>
-                </div>
-                <div class="calc-row">
-                    <span>Комиссия (7%):</span>
-                    <span id="calc-commission">✨ 14</span>
-                </div>
-                <div class="calc-row">
-                    <span>Итого будет списано:</span>
-                    <span id="calc-total">✨ 214</span>
-                </div>
-                <div class="calc-row bot-receive">
-                    <span>Вы получите в боте:</span>
-                    <span id="calc-bot-stars">⭐ 1</span>
-                </div>
-            </div>
-
-            <button id="withdraw-button" class="nav-button" disabled>Вывести</button>
+            
         </div>
     </div>
 
