@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- ИЗМЕНЕНО: Подключаем THREE.js и загрузчик для 3D-моделей (GLTFLoader) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
     <!-- Анимированный фон (общий для всех экранов) -->
@@ -24,9 +27,9 @@
                 <span id="balance-counter">0</span>
             </div>
 
-            <!-- Центральный элемент: Контейнер для 3D звезды -->
+            <!-- Центральный элемент: Контейнер для 3D-звезды -->
             <div class="star-wrapper">
-                <!-- ИЗМЕНЕНО: SVG удален, теперь это контейнер для 3D сцены -->
+                <!-- ИЗМЕНЕНО: Теперь это контейнер для 3D-сцены -->
                 <div id="star-container"></div>
             </div>
 
@@ -103,8 +106,7 @@
         </div>
     </div>
 
-    <!-- ИЗМЕНЕНО: Добавлена библиотека Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
+

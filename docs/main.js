@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Running Maniac Clic main.js version 4.0 - GLTF Loader");
+
     // Инициализация Telegram Web App
     const tg = window.Telegram.WebApp;
     try {
@@ -36,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
-    // ДОБАВЛЕНО: Переменная для хранения ID таймера регенерации
     let energyRegenIntervalId = null;
 
 
@@ -47,16 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
         screen.classList.remove('hidden');
     }
 
-    // ИЗМЕНЕНО: Логика навигации теперь управляет таймером
     goToWithdrawBtn.addEventListener('click', () => {
-        stopEnergyRegen(); // Останавливаем таймер при уходе с игрового экрана
+        stopEnergyRegen(); 
         initWithdrawPage();
         showScreen(withdrawScreen);
     });
 
     backButton.addEventListener('click', () => {
         updateBalanceUI();
-        startEnergyRegen(); // Перезапускаем таймер при возвращении на игровой экран
+        startEnergyRegen(); 
         showScreen(gameScreen);
     });
 
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     }
     
-    // --- ОБНОВЛЕНИЕ UI И АНИМАЦИИ (Вынесены для глобального доступа) ---
+    // --- ОБНОВЛЕНИЕ UI И АНИМАЦИИ ---
     function updateBalanceUI() {
         if (balanceCounter) {
             balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function checkEnergy() {
         const starContainer = document.getElementById('star-container');
-        // ВАЖНО: Эта проверка предотвращает ошибку, если элемент не найден на текущем экране
         if (starContainer) {
             starContainer.classList.toggle('disabled', gameState.energy < config.energyPerClick);
         }
@@ -143,13 +142,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBalanceUI();
         updateEnergyUI();
         checkEnergy();
-        initThreeJSScene(); // Запускаем 3D-сцену
-        startEnergyRegen(); // ИЗМЕНЕНО: Запускаем таймер через новую функцию
+        initThreeJSScene();
+        startEnergyRegen();
     }
 
-    // --- ДОБАВЛЕНО: Функции для управления таймером регенерации энергии ---
+    // --- УПРАВЛЕНИЕ ТАЙМЕРОМ РЕГЕНЕРАЦИИ ---
     function startEnergyRegen() {
-        stopEnergyRegen(); // Сначала останавливаем старый таймер, чтобы избежать дублирования
+        stopEnergyRegen();
         energyRegenIntervalId = setInterval(() => {
             if (gameState.energy < config.maxEnergy) {
                 gameState.energy = Math.min(config.maxEnergy, gameState.energy + config.energyRegenRate);
@@ -168,48 +167,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     // --- ЛОГИКА THREE.JS ---
     function initThreeJSScene() {
         const container = document.getElementById('star-container');
         if (!container || !THREE) return;
 
-        // 1. Scene
         scene = new THREE.Scene();
-
-        // 2. Camera
         camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.z = 4;
+        camera.position.z = 5; // Немного отодвинул камеру
 
-        // 3. Renderer
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        container.innerHTML = ''; // Очищаем на случай повторной инициализации
+        container.innerHTML = '';
         container.appendChild(renderer.domElement);
 
-        // 4. Lights
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         pointLight = new THREE.PointLight(0x00ffff, 1.5, 100);
         pointLight.position.set(0, 0, 5);
         scene.add(pointLight);
         
-        // 5. Star Geometry & Material
-        const geometry = new THREE.IcosahedronGeometry(1.5, 1);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x8a2be2,
-            emissive: 0x00ffff,
-            emissiveIntensity: 0.4,
-            metalness: 0.8,
-            roughness: 0.3,
-        });
-        starMesh = new THREE.Mesh(geometry, material);
-        scene.add(starMesh);
+        // --- ЗАГРУЗКА ВНЕШНЕЙ 3D-МОДЕЛИ ---
+        const loader = new THREE.GLTFLoader();
+
+        // =================================================================
+        // >> ИМЯ ФАЙЛА ЗАМЕНЕНО НА ВАШЕ <<
+        // =================================================================
+        const modelPath = 'Galactic_Starburst_0923140405_texture.glb'; 
+
+        loader.load(
+            modelPath,
+            function (gltf) {
+                starMesh = gltf.scene;
+                
+                // Настраиваем масштаб и положение модели по вашему усмотрению
+                starMesh.scale.set(2, 2, 2); 
+                
+                scene.add(starMesh);
+                console.log("3D model loaded successfully!");
+            },
+            undefined,
+            function (error) {
+                console.error('Ошибка при загрузке модели:', error);
+                // Если модель не загрузилась, создаем резервную фигуру
+                const geometry = new THREE.IcosahedronGeometry(1.5, 1);
+                const material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Красный цвет для индикации ошибки
+                starMesh = new THREE.Mesh(geometry, material);
+                scene.add(starMesh);
+            }
+        );
         
-        // 6. Animation Loop
         function animate() {
             requestAnimationFrame(animate);
-            if (starMesh) {
+            if (starMesh) { // Вращаем модель, если она загружена
                 starMesh.rotation.x += 0.002;
                 starMesh.rotation.y += 0.003;
             }
@@ -223,14 +233,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         animate();
         
-        // 7. Event Listeners
         renderer.domElement.addEventListener('click', onStarClick, false);
         window.addEventListener('resize', onWindowResize, false);
     }
 
     function onStarClick(event) {
-        if (gameState.energy < config.energyPerClick) {
-            showNotification();
+        if (!starMesh || gameState.energy < config.energyPerClick) {
+            if (gameState.energy < config.energyPerClick) showNotification();
             return;
         }
 
@@ -243,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(starMesh);
+        // Рекурсивная проверка для сложных моделей
+        const intersects = raycaster.intersectObject(starMesh, true);
 
         if (intersects.length > 0) {
             gameState.energy -= config.energyPerClick;
@@ -254,8 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
             checkEnergy();
             
             // Анимация клика на 3D-модели
-            starMesh.scale.set(0.9, 0.9, 0.9);
-            setTimeout(() => starMesh.scale.set(1, 1, 1), 100);
+            starMesh.scale.set(1.8, 1.8, 1.8);
+            setTimeout(() => starMesh.scale.set(2, 2, 2), 100);
             
             playClickAnimations(event.clientX, event.clientY);
             saveState();
@@ -338,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     successModal.classList.add('hidden');
                     updateBalanceUI();
                     showScreen(gameScreen);
+                    startEnergyRegen(); // Перезапускаем таймер при возврате на игровой экран
                 }, 3000);
             }
         };
