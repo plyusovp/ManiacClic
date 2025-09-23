@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const successModal = document.getElementById('success-modal');
     const balanceCounter = document.getElementById('balance-counter');
     const energyBar = document.getElementById('energy-bar');
-    const energyCounter = document.getElementById('energy-counter');
+    const energyCounter = document = document.getElementById('energy-counter');
     
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Переменные для плавной анимации
     const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
     let targetScale = BASE_SCALE;
-    let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); // Начальное вращение
+    // Установка двойного поворота, чтобы компенсировать ориентацию модели.
+    let baseRotation = new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0); 
     let targetRotation = baseRotation.clone();
     
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
