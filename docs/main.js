@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const center = box.getCenter(new THREE.Vector3());
                 starMesh.position.sub(center); 
                 // Правильный поворот, чтобы звезда была "лицом" к камере.
-                starMesh.rotation.set(-Math.PI / 2, 0, 0); 
+                starMesh.rotation.set(0, Math.PI / 2, 0); 
                 
                 starMesh.scale.set(2, 2, 2); 
                 scene.add(starMesh);
