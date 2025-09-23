@@ -38,13 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const energyBar = document.getElementById('energy-bar');
     const energyCounter = document = document.getElementById('energy-counter');
     
-    // Элементы для экрана вывода
-    const withdrawBalance = document.getElementById('withdraw-balance');
-    const withdrawButtonsContainer = document.getElementById('withdraw-buttons-container');
-    const withdrawStatusText = document.getElementById('withdraw-status-text');
-    const withdrawInfo = document.getElementById('withdraw-info');
-    const withdrawConfirmBtn = document.getElementById('withdraw-confirm-button');
-
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
@@ -117,9 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (balanceCounter) {
             balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
-        if (withdrawBalance) {
-            withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
-        }
+        // Убрал обновление withdrawBalance здесь, чтобы избежать ошибки
     }
     
     function updateEnergyUI() {
@@ -331,6 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ ВЫВОДА ---
     function initWithdrawPage() {
+        const withdrawBalance = document.getElementById('withdraw-balance');
+        const withdrawButtonsContainer = document.getElementById('withdraw-buttons-container');
+        const withdrawStatusText = document.getElementById('withdraw-status-text');
+        const withdrawInfo = document.getElementById('withdraw-info');
+        const withdrawConfirmBtn = document.getElementById('withdraw-confirm-button');
+        
         const withdrawAmounts = [200, 400, 600, 800, 1000, 1600, 2200];
         const userBalance = Math.floor(gameState.balance);
         let selectedAmount = 0;
@@ -426,6 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         updateBalanceUI();
+        if (withdrawBalance) {
+            withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
     }
 
     // --- ОБЩИЕ ФУНКЦИИ И ЗАПУСК ---
