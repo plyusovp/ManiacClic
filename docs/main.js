@@ -38,12 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
     
-    let isDragging = false;
-    let previousMousePosition = {
-        x: 0,
-        y: 0
-    };
-    
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
         gameScreen.classList.add('hidden');
@@ -201,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const box = new THREE.Box3().setFromObject(starMesh);
                 const center = box.getCenter(new THREE.Vector3());
                 starMesh.position.sub(center); 
-                starMesh.rotation.set(Math.PI / 2, Math.PI, 0); 
+                starMesh.rotation.set(0, Math.PI, 0); 
                 
                 starMesh.scale.set(2, 2, 2); 
                 scene.add(starMesh);
@@ -230,38 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         renderer.domElement.addEventListener('click', onStarClick, false);
         window.addEventListener('resize', onWindowResize, false);
-        
-        // Добавляем обработчики событий мыши для вращения
-        renderer.domElement.addEventListener('pointerdown', onPointerDown, false);
-        renderer.domElement.addEventListener('pointermove', onPointerMove, false);
-        renderer.domElement.addEventListener('pointerup', onPointerUp, false);
-    }
-    
-    function onPointerDown(event) {
-        isDragging = true;
-        previousMousePosition.x = event.clientX;
-        previousMousePosition.y = event.clientY;
-    }
-    
-    function onPointerMove(event) {
-        if (!isDragging || !starMesh) return;
-        
-        const deltaMove = {
-            x: event.clientX - previousMousePosition.x,
-            y: event.clientY - previousMousePosition.y
-        };
-        
-        const rotationSpeed = 0.005;
-        
-        starMesh.rotation.y += deltaMove.x * rotationSpeed;
-        starMesh.rotation.x += deltaMove.y * rotationSpeed;
-        
-        previousMousePosition.x = event.clientX;
-        previousMousePosition.y = event.clientY;
-    }
-    
-    function onPointerUp() {
-        isDragging = false;
     }
 
     function onStarClick(event) {
@@ -290,11 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
             checkEnergy();
             
             if (starMesh) {
-                // Вращение при клике, не меняющее основную ориентацию
                 const originalRotation = starMesh.rotation.clone();
                 starMesh.scale.set(1.8, 1.8, 1.8);
                 
-                // Добавляем небольшой поворот для анимации
                 starMesh.rotation.z += (Math.random() - 0.5) * 0.2;
                 starMesh.rotation.x += (Math.random() - 0.5) * 0.2;
 
