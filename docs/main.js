@@ -45,6 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); 
     let targetRotation = baseRotation.clone();
     
+    // Цветовые переменные для анимации
+    const colorStart = new THREE.Color(0xff0000);
+    const colorEnd = new THREE.Color(0x0000ff);
+    const bgColorStart = new THREE.Color(0x110000);
+    const bgColorEnd = new THREE.Color(0x000011);
+    let colorPhase = 0;
+    
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
         gameScreen.classList.add('hidden');
@@ -187,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        pointLight = new THREE.PointLight(0x00ffff, 1.5, 100);
+        pointLight = new THREE.PointLight(0xff0000, 1.5, 100);
         pointLight.position.set(0, 0, 5);
         scene.add(pointLight);
         
@@ -233,11 +240,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if(pointLight){
-                const time = Date.now() * 0.001;
-                pointLight.position.x = Math.sin(time * 0.7) * 4;
-                pointLight.position.y = Math.cos(time * 0.5) * 4;
-                pointLight.position.z = Math.cos(time * 0.3) * 4;
+                colorPhase = (Math.sin(Date.now() * 0.0005) + 1) / 2;
+                const newColor = new THREE.Color();
+                newColor.lerpColors(colorStart, colorEnd, colorPhase);
+                pointLight.color = newColor;
             }
+
+            // Плавное изменение цвета фона
+            const bgElement = document.body; // or document.getElementById('game-screen');
+            if(bgElement) {
+                const newBgColor = new THREE.Color();
+                newBgColor.lerpColors(bgColorStart, bgColorEnd, colorPhase);
+                bgElement.style.backgroundColor = `#${newBgColor.getHexString()}`;
+            }
+
             renderer.render(scene, camera);
         }
         animate();
