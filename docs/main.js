@@ -36,15 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const successModal = document.getElementById('success-modal');
     const balanceCounter = document.getElementById('balance-counter');
     const energyBar = document.getElementById('energy-bar');
-    const energyCounter = document.getElementById('energy-counter'); // Исправлена опечатка
+    const energyCounter = document.getElementById('energy-counter');
 
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
-    let animationFrameId = null; // Переменная для управления циклом анимации
+    let animationFrameId = null;
     
     // Переменные для плавной анимации
-    const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
+    const BASE_SCALE = 2.5;
     let targetScale = BASE_SCALE;
     let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); 
     let targetRotation = baseRotation.clone();
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (goToWithdrawBtn) {
         goToWithdrawBtn.addEventListener('click', () => {
             stopEnergyRegen();
-            stopThreeJSScene(); // Останавливаем 3D-сцену
+            disposeThreeJSScene(); // Полностью очищаем сцену
             initWithdrawPage();
             showScreen(withdrawScreen);
         });
@@ -198,12 +198,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ЛОГИКА THREE.JS ---
     function initThreeJSScene() {
         const container = document.getElementById('star-container');
-        if (!container || !window.THREE) return;
-
-        // Если сцена уже существует, просто запускаем анимацию
-        if (scene) {
-            animate();
+        if (!container || !window.THREE) {
             return;
+        }
+        
+        // Очищаем старый рендерер, если он существует
+        if (renderer) {
+            disposeThreeJSScene();
         }
 
         scene = new THREE.Scene();
@@ -259,12 +260,27 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', onWindowResize, false);
     }
     
-    // Функция для остановки цикла анимации
-    function stopThreeJSScene() {
+    // Функция для очистки и остановки сцены
+    function disposeThreeJSScene() {
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
+
+        if (renderer) {
+            renderer.dispose();
+            renderer = null;
+        }
+
+        if (scene) {
+            // Удаляем все объекты из сцены
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+            scene = null;
+        }
+
+        starMesh = null;
     }
 
     function animate() {
@@ -286,14 +302,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Плавное изменение цвета фона
-        const bgElement = document.body; // or document.getElementById('game-screen');
+        const bgElement = document.body;
         if(bgElement) {
             const newBgColor = new THREE.Color();
             newBgColor.lerpColors(bgColorStart, bgColorEnd, colorPhase);
             bgElement.style.backgroundColor = `#${newBgColor.getHexString()}`;
         }
 
-        renderer.render(scene, camera);
+        if (renderer) {
+            renderer.render(scene, camera);
+        }
     }
 
     function onStarClick(event) {
