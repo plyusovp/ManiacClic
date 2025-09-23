@@ -110,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (balanceCounter) {
             balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
-        // Убрал обновление withdrawBalance здесь, чтобы избежать ошибки
     }
     
     function updateEnergyUI() {
@@ -356,15 +355,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
             }
             withdrawInfo.classList.remove('hidden');
-            withdrawConfirmBtn.classList.remove('hidden');
-            withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
+            if (withdrawConfirmBtn) {
+                withdrawConfirmBtn.classList.remove('hidden');
+                withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
+            }
         }
 
         // Проверка дневного лимита
-        withdrawConfirmBtn.disabled = true;
+        if (withdrawConfirmBtn) {
+            withdrawConfirmBtn.disabled = true;
+        }
         withdrawButtonsContainer.innerHTML = '';
         withdrawInfo.classList.add('hidden');
-        withdrawConfirmBtn.classList.add('hidden');
+        if (withdrawConfirmBtn) {
+            withdrawConfirmBtn.classList.add('hidden');
+        }
 
         if (gameState.withdrawalsToday.count >= 2) {
             withdrawStatusText.innerText = `Вы достигли дневного лимита операций на сегодня (2/2). Попробуйте завтра.`;
@@ -392,37 +397,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Логика подтверждения вывода
-        withdrawConfirmBtn.onclick = () => {
-            if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
-            const amount = selectedAmount;
-            const commissionRate = getCommission(amount);
-            const commission = Math.round(amount * commissionRate);
-            const totalDeducted = amount + commission;
+        if (withdrawConfirmBtn) {
+            withdrawConfirmBtn.onclick = () => {
+                if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
+                const amount = selectedAmount;
+                const commissionRate = getCommission(amount);
+                const commission = Math.round(amount * commissionRate);
+                const totalDeducted = amount + commission;
 
-            if (totalDeducted <= userBalance) {
-                const botStars = amount / 200;
-                const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
-                try {
-                    tg.sendData(JSON.stringify(jsonData));
-                } catch(e) { console.error("Couldn't send data to Telegram", e); }
+                if (totalDeducted <= userBalance) {
+                    const botStars = amount / 200;
+                    const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
+                    try {
+                        tg.sendData(JSON.stringify(jsonData));
+                    } catch(e) { console.error("Couldn't send data to Telegram", e); }
 
-                gameState.balance -= totalDeducted;
-                gameState.withdrawalsToday.count++;
-                saveState();
+                    gameState.balance -= totalDeducted;
+                    gameState.withdrawalsToday.count++;
+                    saveState();
 
-                document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
-                successModal.classList.remove('hidden');
+                    document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
+                    successModal.classList.remove('hidden');
 
-                setTimeout(() => {
-                    successModal.classList.add('hidden');
-                    updateBalanceUI();
-                    showScreen(gameScreen);
-                    startEnergyRegen();
-                }, 3000);
-            }
-        };
+                    setTimeout(() => {
+                        successModal.classList.add('hidden');
+                        updateBalanceUI();
+                        showScreen(gameScreen);
+                        startEnergyRegen();
+                    }, 3000);
+                }
+            };
+        }
 
-        updateBalanceUI();
         if (withdrawBalance) {
             withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
