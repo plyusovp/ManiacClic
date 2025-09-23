@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Running Maniac Clic main.js version 5.1 - Corrected Star Rotation");
-
     // Инициализация Telegram Web App
     const tg = window.Telegram.WebApp;
     try {
@@ -194,15 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
             modelPath,
             function (gltf) {
                 starMesh = gltf.scene;
+                
+                const box = new THREE.Box3().setFromObject(starMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                starMesh.position.sub(center); 
+                starMesh.rotation.set(Math.PI / 2, Math.PI, 0); 
+                
                 starMesh.scale.set(2, 2, 2); 
-                // ИЗМЕНЕНО: Поворачиваем модель лицом к камере
-                starMesh.rotation.x = 1.57; // Поворот на 90 градусов (в радианах)
                 scene.add(starMesh);
-                console.log("3D model loaded successfully!");
             },
             undefined,
             function (error) {
-                console.error('Ошибка при загрузке модели:', error);
+                console.error('An error happened during model loading:', error);
                 const geometry = new THREE.IcosahedronGeometry(1.5, 1);
                 const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
                 starMesh = new THREE.Mesh(geometry, material);
@@ -252,8 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
             checkEnergy();
             
             if (starMesh) {
-                // ИЗМЕНЕНО: Анимация клика теперь учитывает базовый поворот
-                const baseRotationX = 1.57;
+                const baseRotationX = Math.PI / 2;
+                const baseRotationY = Math.PI;
                 const baseRotationZ = 0;
 
                 starMesh.scale.set(1.8, 1.8, 1.8);
@@ -262,8 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setTimeout(() => {
                     starMesh.scale.set(2, 2, 2);
-                    starMesh.rotation.z = baseRotationZ;
-                    starMesh.rotation.x = baseRotationX;
+                    starMesh.rotation.set(baseRotationX, baseRotationY, baseRotationZ);
                 }, 120);
             }
             
