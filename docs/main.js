@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
+    // ДОБАВЛЕНО: Переменная для хранения ID таймера регенерации
+    let energyRegenIntervalId = null;
 
 
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
@@ -45,13 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
         screen.classList.remove('hidden');
     }
 
+    // ИЗМЕНЕНО: Логика навигации теперь управляет таймером
     goToWithdrawBtn.addEventListener('click', () => {
+        stopEnergyRegen(); // Останавливаем таймер при уходе с игрового экрана
         initWithdrawPage();
         showScreen(withdrawScreen);
     });
 
     backButton.addEventListener('click', () => {
         updateBalanceUI();
+        startEnergyRegen(); // Перезапускаем таймер при возвращении на игровой экран
         showScreen(gameScreen);
     });
 
@@ -97,8 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkEnergy() {
-        // Управляем состоянием disabled контейнера, а не самой звезды
         const starContainer = document.getElementById('star-container');
+        // ВАЖНО: Эта проверка предотвращает ошибку, если элемент не найден на текущем экране
         if (starContainer) {
             starContainer.classList.toggle('disabled', gameState.energy < config.energyPerClick);
         }
@@ -139,9 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEnergyUI();
         checkEnergy();
         initThreeJSScene(); // Запускаем 3D-сцену
+        startEnergyRegen(); // ИЗМЕНЕНО: Запускаем таймер через новую функцию
+    }
 
-        // Таймер регенерации энергии
-        setInterval(() => {
+    // --- ДОБАВЛЕНО: Функции для управления таймером регенерации энергии ---
+    function startEnergyRegen() {
+        stopEnergyRegen(); // Сначала останавливаем старый таймер, чтобы избежать дублирования
+        energyRegenIntervalId = setInterval(() => {
             if (gameState.energy < config.maxEnergy) {
                 gameState.energy = Math.min(config.maxEnergy, gameState.energy + config.energyRegenRate);
                 gameState.lastUpdate = Date.now();
@@ -151,6 +160,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, config.energyRegenInterval);
     }
+
+    function stopEnergyRegen() {
+        if (energyRegenIntervalId) {
+            clearInterval(energyRegenIntervalId);
+            energyRegenIntervalId = null;
+        }
+    }
+
 
     // --- ЛОГИКА THREE.JS ---
     function initThreeJSScene() {
