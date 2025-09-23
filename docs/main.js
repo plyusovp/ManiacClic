@@ -14,13 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
         energyPerClick: 1,
         starPerClick: 1,
         energyRegenRate: 1,
-        energyRegenInterval: 10000
+        energyRegenInterval: 20000 // Теперь 1 единица раз в 20 секунд
     };
 
     let gameState = {
         balance: 0,
         energy: config.maxEnergy,
-        lastUpdate: Date.now()
+        lastUpdate: Date.now(),
+        withdrawalsToday: {
+            count: 0,
+            date: new Date().toLocaleDateString()
+        }
     };
 
     // --- ЭЛЕМЕНТЫ DOM ---
@@ -34,6 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const energyBar = document.getElementById('energy-bar');
     const energyCounter = document = document.getElementById('energy-counter');
     
+    // Элементы для экрана вывода
+    const withdrawBalance = document.getElementById('withdraw-balance');
+    const withdrawButtonsContainer = document.getElementById('withdraw-buttons-container');
+    const withdrawStatusText = document.getElementById('withdraw-status-text');
+    const withdrawInfo = document.getElementById('withdraw-info');
+    const withdrawConfirmBtn = document.getElementById('withdraw-confirm-button');
+
     // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
@@ -41,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Переменные для плавной анимации
     const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
     let targetScale = BASE_SCALE;
-    // Установка правильного поворота, чтобы звезда была "лицом" к камере.
     let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); 
     let targetRotation = baseRotation.clone();
     
@@ -82,6 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsedState = JSON.parse(savedState);
             gameState = { ...gameState, ...parsedState };
 
+            // Проверка и сброс лимита вывода, если наступил новый день
+            const today = new Date().toLocaleDateString();
+            if (gameState.withdrawalsToday.date !== today) {
+                gameState.withdrawalsToday.count = 0;
+                gameState.withdrawalsToday.date = today;
+            }
+
             const now = Date.now();
             const elapsedSeconds = Math.floor((now - gameState.lastUpdate) / 1000);
             const intervalsPassed = Math.floor(elapsedSeconds / (config.energyRegenInterval / 1000));
@@ -100,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (balanceCounter) {
             balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
-        const withdrawBalance = document.getElementById('withdraw-balance');
         if (withdrawBalance) {
             withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
@@ -315,52 +331,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ ВЫВОДА ---
     function initWithdrawPage() {
-        const slider = document.getElementById('withdraw-slider');
-        const calcAmount = document.getElementById('calc-amount');
-        const calcCommission = document.getElementById('calc-commission');
-        const calcTotal = document.getElementById('calc-total');
-        const calcBotStars = document.getElementById('calc-bot-stars');
-        const withdrawButton = document.getElementById('withdraw-button');
-
-        updateBalanceUI();
+        const withdrawAmounts = [200, 400, 600, 800, 1000, 1600, 2200];
         const userBalance = Math.floor(gameState.balance);
-        const minWithdraw = 200;
-        const step = 200;
+        let selectedAmount = 0;
 
-        const maxWithdraw = Math.floor(userBalance / step) * step;
+        // Функция для расчета комиссии в зависимости от суммы
+        function getCommission(amount) {
+            if (amount >= 2200) {
+                return 0.05; // 5%
+            } else if (amount >= 1600) {
+                return 0.06; // 6%
+            } else {
+                return 0.07; // 7%
+            }
+        }
 
-        slider.min = minWithdraw;
-        slider.step = step;
+        // Обновление UI вывода
+        function updateWithdrawUI(amount, isMax = false) {
+            selectedAmount = amount;
+            if (isMax) {
+                const commission = amount * getCommission(amount);
+                const totalDeducted = amount + commission;
+                withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
+            } else {
+                const commission = amount * getCommission(amount);
+                const totalDeducted = amount + commission;
+                withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
+            }
+            withdrawInfo.classList.remove('hidden');
+            withdrawConfirmBtn.classList.remove('hidden');
+            withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
+        }
 
-        if (maxWithdraw >= minWithdraw) {
-            slider.disabled = false;
-            slider.max = maxWithdraw;
-            slider.value = minWithdraw;
+        // Проверка дневного лимита
+        withdrawConfirmBtn.disabled = true;
+        withdrawButtonsContainer.innerHTML = '';
+        withdrawInfo.classList.add('hidden');
+        withdrawConfirmBtn.classList.add('hidden');
+
+        if (gameState.withdrawalsToday.count >= 2) {
+            withdrawStatusText.innerText = `Вы достигли дневного лимита операций на сегодня (2/2). Попробуйте завтра.`;
+            withdrawInfo.classList.remove('hidden');
         } else {
-            slider.disabled = true;
-            slider.max = minWithdraw;
-            slider.value = minWithdraw;
+            // Создание кнопок для вывода
+            withdrawAmounts.forEach(amount => {
+                const button = document.createElement('button');
+                button.className = 'withdraw-btn';
+                button.innerText = `${amount}`;
+                button.disabled = (amount + (amount * getCommission(amount))) > userBalance;
+                button.addEventListener('click', () => updateWithdrawUI(amount));
+                withdrawButtonsContainer.appendChild(button);
+            });
+            // Кнопка MAX
+            const maxButton = document.createElement('button');
+            maxButton.className = 'withdraw-btn';
+            maxButton.innerText = 'MAX';
+            const maxAmount = Math.floor(userBalance / (1 + getCommission(userBalance))) || 0;
+            maxButton.disabled = maxAmount < 200;
+            maxButton.addEventListener('click', () => updateWithdrawUI(maxAmount, true));
+            withdrawButtonsContainer.appendChild(maxButton);
+
+            withdrawStatusText.innerText = `Сегодня вы можете вывести средства ещё ${2 - gameState.withdrawalsToday.count} раз. Выберите сумму:`;
         }
 
-        function updateCalculator() {
-            const amount = parseInt(slider.value);
-            const commission = Math.round(amount * 0.07);
-            const totalDeducted = amount + commission;
-            const botStars = amount / 200;
-
-            calcAmount.innerText = `✨ ${amount.toLocaleString('ru-RU')}`;
-            calcCommission.innerText = `✨ ${commission.toLocaleString('ru-RU')}`;
-            calcTotal.innerText = `✨ ${totalDeducted.toLocaleString('ru-RU')}`;
-            calcBotStars.innerText = `⭐ ${botStars.toLocaleString('ru-RU')}`;
-            withdrawButton.disabled = slider.disabled || (totalDeducted > userBalance);
-        }
-
-        slider.oninput = updateCalculator;
-
-        withdrawButton.onclick = () => {
-            if (withdrawButton.disabled) return;
-            const amount = parseInt(slider.value);
-            const commission = Math.round(amount * 0.07);
+        // Логика подтверждения вывода
+        withdrawConfirmBtn.onclick = () => {
+            if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
+            const amount = selectedAmount;
+            const commissionRate = getCommission(amount);
+            const commission = Math.round(amount * commissionRate);
             const totalDeducted = amount + commission;
 
             if (totalDeducted <= userBalance) {
@@ -371,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch(e) { console.error("Couldn't send data to Telegram", e); }
 
                 gameState.balance -= totalDeducted;
+                gameState.withdrawalsToday.count++;
                 saveState();
 
                 document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
@@ -384,7 +424,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 3000);
             }
         };
-        updateCalculator();
+
+        updateBalanceUI();
     }
 
     // --- ОБЩИЕ ФУНКЦИИ И ЗАПУСК ---
