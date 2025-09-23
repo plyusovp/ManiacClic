@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Переменные для плавной анимации
     const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
     let targetScale = BASE_SCALE;
-    // Установка двойного поворота, чтобы компенсировать ориентацию модели.
-    let baseRotation = new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0); 
+    // Установка правильного поворота, чтобы звезда была "лицом" к камере.
+    let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); 
     let targetRotation = baseRotation.clone();
     
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
