@@ -38,6 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let scene, camera, renderer, starMesh, pointLight;
     let energyRegenIntervalId = null;
     
+    // Переменные для плавной анимации
+    const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
+    let targetScale = BASE_SCALE;
+    let targetRotation = new THREE.Euler(-Math.PI / 2, Math.PI, 0); // Начальное вращение
+    let baseRotation = new THREE.Euler(-Math.PI / 2, Math.PI, 0);
+    
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
         gameScreen.classList.add('hidden');
@@ -195,10 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const box = new THREE.Box3().setFromObject(starMesh);
                 const center = box.getCenter(new THREE.Vector3());
                 starMesh.position.sub(center); 
+                // Установка начального размера
+                starMesh.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE); 
                 // Правильный поворот, чтобы звезда была "лицом" к камере.
-                starMesh.rotation.set(0, Math.PI / 2, 0); 
+                starMesh.rotation.set(baseRotation.x, baseRotation.y, baseRotation.z);
                 
-                starMesh.scale.set(2, 2, 2); 
                 scene.add(starMesh);
             },
             undefined,
@@ -207,12 +214,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const geometry = new THREE.IcosahedronGeometry(1.5, 1);
                 const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
                 starMesh = new THREE.Mesh(geometry, material);
+                starMesh.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
+                starMesh.rotation.set(baseRotation.x, baseRotation.y, baseRotation.z);
                 scene.add(starMesh);
             }
         );
         
         function animate() {
             requestAnimationFrame(animate);
+
+            if (starMesh) {
+                // Плавное изменение размера и вращения
+                starMesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+                starMesh.rotation.x = THREE.MathUtils.lerp(starMesh.rotation.x, targetRotation.x, 0.1);
+                starMesh.rotation.y = THREE.MathUtils.lerp(starMesh.rotation.y, targetRotation.y, 0.1);
+                starMesh.rotation.z = THREE.MathUtils.lerp(starMesh.rotation.z, targetRotation.z, 0.1);
+            }
+
             if(pointLight){
                 const time = Date.now() * 0.001;
                 pointLight.position.x = Math.sin(time * 0.7) * 4;
@@ -252,18 +270,17 @@ document.addEventListener('DOMContentLoaded', () => {
             updateEnergyUI();
             checkEnergy();
             
-            if (starMesh) {
-                const originalRotation = starMesh.rotation.clone();
-                starMesh.scale.set(1.8, 1.8, 1.8);
-                
-                starMesh.rotation.z += (Math.random() - 0.5) * 0.2;
-                starMesh.rotation.x += (Math.random() - 0.5) * 0.2;
+            // Задаем целевые значения для анимации
+            targetScale = BASE_SCALE * 0.9; // Уменьшение размера
+            targetRotation.x = baseRotation.x + (Math.random() - 0.5) * 0.2;
+            targetRotation.y = baseRotation.y + (Math.random() - 0.5) * 0.2;
+            targetRotation.z = baseRotation.z + (Math.random() - 0.5) * 0.2;
 
-                setTimeout(() => {
-                    starMesh.scale.set(2, 2, 2);
-                    starMesh.rotation.copy(originalRotation);
-                }, 120);
-            }
+            // Возврат к исходным значениям после короткой задержки
+            setTimeout(() => {
+                targetScale = BASE_SCALE;
+                targetRotation.copy(baseRotation);
+            }, 120);
             
             playClickAnimations(event.clientX, event.clientY);
             saveState();
