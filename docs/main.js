@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Running Maniac Clic main.js version 5.0 - Static Star with Wobble Animation");
+    console.log("Running Maniac Clic main.js version 5.1 - Corrected Star Rotation");
 
     // Инициализация Telegram Web App
     const tg = window.Telegram.WebApp;
@@ -195,6 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
             function (gltf) {
                 starMesh = gltf.scene;
                 starMesh.scale.set(2, 2, 2); 
+                // ИЗМЕНЕНО: Поворачиваем модель лицом к камере
+                starMesh.rotation.x = 1.57; // Поворот на 90 градусов (в радианах)
                 scene.add(starMesh);
                 console.log("3D model loaded successfully!");
             },
@@ -210,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function animate() {
             requestAnimationFrame(animate);
-            // ИЗМЕНЕНО: Постоянное вращение звезды удалено.
             if(pointLight){
                 const time = Date.now() * 0.001;
                 pointLight.position.x = Math.sin(time * 0.7) * 4;
@@ -250,20 +251,19 @@ document.addEventListener('DOMContentLoaded', () => {
             updateEnergyUI();
             checkEnergy();
             
-            // ИЗМЕНЕНО: Анимация клика заменена на "пошатывание"
             if (starMesh) {
-                // 1. Уменьшаем звезду
+                // ИЗМЕНЕНО: Анимация клика теперь учитывает базовый поворот
+                const baseRotationX = 1.57;
+                const baseRotationZ = 0;
+
                 starMesh.scale.set(1.8, 1.8, 1.8);
+                starMesh.rotation.z = baseRotationZ + (Math.random() - 0.5) * 0.2;
+                starMesh.rotation.x = baseRotationX + (Math.random() - 0.5) * 0.2;
 
-                // 2. Слегка поворачиваем ее в случайную сторону для эффекта "удара"
-                starMesh.rotation.z = (Math.random() - 0.5) * 0.2;
-                starMesh.rotation.x = (Math.random() - 0.5) * 0.2;
-
-                // 3. Через 120мс возвращаем в исходное состояние
                 setTimeout(() => {
                     starMesh.scale.set(2, 2, 2);
-                    starMesh.rotation.z = 0;
-                    starMesh.rotation.x = 0;
+                    starMesh.rotation.z = baseRotationZ;
+                    starMesh.rotation.x = baseRotationX;
                 }, 120);
             }
             
