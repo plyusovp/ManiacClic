@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Running Maniac Clic main.js version 4.0 - GLTF Loader");
+    console.log("Running Maniac Clic main.js version 5.0 - Static Star with Wobble Animation");
 
     // Инициализация Telegram Web App
     const tg = window.Telegram.WebApp;
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.z = 5; // Немного отодвинул камеру
+        camera.position.z = 5;
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
@@ -187,31 +187,22 @@ document.addEventListener('DOMContentLoaded', () => {
         pointLight.position.set(0, 0, 5);
         scene.add(pointLight);
         
-        // --- ЗАГРУЗКА ВНЕШНЕЙ 3D-МОДЕЛИ ---
         const loader = new THREE.GLTFLoader();
-
-        // =================================================================
-        // >> ИМЯ ФАЙЛА ЗАМЕНЕНО НА ВАШЕ <<
-        // =================================================================
         const modelPath = 'Galactic_Starburst_0923140405_texture.glb'; 
 
         loader.load(
             modelPath,
             function (gltf) {
                 starMesh = gltf.scene;
-                
-                // Настраиваем масштаб и положение модели по вашему усмотрению
                 starMesh.scale.set(2, 2, 2); 
-                
                 scene.add(starMesh);
                 console.log("3D model loaded successfully!");
             },
             undefined,
             function (error) {
                 console.error('Ошибка при загрузке модели:', error);
-                // Если модель не загрузилась, создаем резервную фигуру
                 const geometry = new THREE.IcosahedronGeometry(1.5, 1);
-                const material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Красный цвет для индикации ошибки
+                const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
                 starMesh = new THREE.Mesh(geometry, material);
                 scene.add(starMesh);
             }
@@ -219,10 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function animate() {
             requestAnimationFrame(animate);
-            if (starMesh) { // Вращаем модель, если она загружена
-                starMesh.rotation.x += 0.002;
-                starMesh.rotation.y += 0.003;
-            }
+            // ИЗМЕНЕНО: Постоянное вращение звезды удалено.
             if(pointLight){
                 const time = Date.now() * 0.001;
                 pointLight.position.x = Math.sin(time * 0.7) * 4;
@@ -252,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
-        // Рекурсивная проверка для сложных моделей
         const intersects = raycaster.intersectObject(starMesh, true);
 
         if (intersects.length > 0) {
@@ -263,9 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
             updateEnergyUI();
             checkEnergy();
             
-            // Анимация клика на 3D-модели
-            starMesh.scale.set(1.8, 1.8, 1.8);
-            setTimeout(() => starMesh.scale.set(2, 2, 2), 100);
+            // ИЗМЕНЕНО: Анимация клика заменена на "пошатывание"
+            if (starMesh) {
+                // 1. Уменьшаем звезду
+                starMesh.scale.set(1.8, 1.8, 1.8);
+
+                // 2. Слегка поворачиваем ее в случайную сторону для эффекта "удара"
+                starMesh.rotation.z = (Math.random() - 0.5) * 0.2;
+                starMesh.rotation.x = (Math.random() - 0.5) * 0.2;
+
+                // 3. Через 120мс возвращаем в исходное состояние
+                setTimeout(() => {
+                    starMesh.scale.set(2, 2, 2);
+                    starMesh.rotation.z = 0;
+                    starMesh.rotation.x = 0;
+                }, 120);
+            }
             
             playClickAnimations(event.clientX, event.clientY);
             saveState();
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     successModal.classList.add('hidden');
                     updateBalanceUI();
                     showScreen(gameScreen);
-                    startEnergyRegen(); // Перезапускаем таймер при возврате на игровой экран
+                    startEnergyRegen();
                 }, 3000);
             }
         };
