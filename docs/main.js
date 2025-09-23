@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Переменные для плавной анимации
     const BASE_SCALE = 2.5; // Увеличенный базовый размер звезды
     let targetScale = BASE_SCALE;
-    let targetRotation = new THREE.Euler(-Math.PI / 2, Math.PI, 0); // Начальное вращение
-    let baseRotation = new THREE.Euler(-Math.PI / 2, Math.PI, 0);
+    let baseRotation = new THREE.Euler(0, -Math.PI / 2, 0); // Начальное вращение
+    let targetRotation = baseRotation.clone();
     
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
