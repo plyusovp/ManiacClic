@@ -24,20 +24,10 @@
                 <span id="balance-counter">0</span>
             </div>
 
-            <!-- Центральный элемент: Кликабельная звезда -->
+            <!-- Центральный элемент: Контейнер для 3D звезды -->
             <div class="star-wrapper">
-                <div id="clickable-star">
-                    <svg class="star-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                        <defs>
-                            <radialGradient id="starGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                <stop offset="0%" style="stop-color:#fff; stop-opacity:1" />
-                                <stop offset="70%" style="stop-color:#00ffff; stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#8a2be2; stop-opacity:1" />
-                            </radialGradient>
-                        </defs>
-                        <path d="M50 0L61.22 34.55H97.55L68.17 55.9L79.39 90.45L50 69.1L20.61 90.45L31.83 55.9L2.45 34.55H38.78L50 0Z" fill="url(#starGradient)"/>
-                    </svg>
-                </div>
+                <!-- ИЗМЕНЕНО: SVG удален, теперь это контейнер для 3D сцены -->
+                <div id="star-container"></div>
             </div>
 
             <!-- Нижняя часть: Энергия -->
@@ -113,6 +103,8 @@
         </div>
     </div>
 
+    <!-- ИЗМЕНЕНО: Добавлена библиотека Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

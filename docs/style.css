@@ -143,30 +143,28 @@ body {
     width: 100%;
 }
 
-#clickable-star {
-    width: 70vw;
-    height: 70vw;
-    max-width: 300px;
-    max-height: 300px;
+/* ИЗМЕНЕНО: стили для контейнера 3D-звезды */
+#star-container {
+    width: 80vw;
+    height: 80vw;
+    max-width: 350px;
+    max-height: 350px;
     cursor: pointer;
-    transition: transform 0.1s ease-out;
-    filter: drop-shadow(0 0 15px var(--neon-cyan)) drop-shadow(0 0 30px var(--neon-purple));
+    transition: filter 0.3s ease-out;
 }
 
-#clickable-star.clicked {
-    transform: scale(0.95);
-}
-
-#clickable-star.disabled {
+#star-container.disabled {
     filter: grayscale(80%) brightness(0.7);
     cursor: not-allowed;
 }
 
-.star-svg {
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* ИСПРАВЛЕНО: Гарантирует, что клики обрабатываются родительским DIV */
+/* ДОБАВЛЕНО: стиль для canvas, чтобы он заполнял контейнер */
+#star-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
 }
+
 
 .click-animation-text {
     position: absolute;
@@ -253,7 +251,7 @@ body {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
     box-shadow: 0 0 10px var(--neon-purple);
 }
 
@@ -340,16 +338,16 @@ body {
     font-weight: 600;
 }
 
-/* ИСПРАВЛЕНИЕ ОШИБКИ */
 input[type="range"] {
-    -webkit-appearance: none; /* Для Chrome, Safari, Opera */
-    appearance: none; /* Стандартное свойство */
+    -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 8px;
     background: rgba(0,0,0,0.3);
     border-radius: 4px;
     outline: none;
     border: 1px solid var(--border-color);
+    transition: opacity 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -361,6 +359,7 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     border-radius: 50%;
     box-shadow: 0 0 10px var(--neon-cyan);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -371,7 +370,26 @@ input[type="range"]::-moz-range-thumb {
     border-radius: 50%;
     border: none;
     box-shadow: 0 0 10px var(--neon-cyan);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
 }
+
+input[type="range"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+    background: var(--disabled-color);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+input[type="range"]:disabled::-moz-range-thumb {
+    background: var(--disabled-color);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 
 .calculator {
     width: 100%;
@@ -443,3 +461,4 @@ input[type="range"]::-moz-range-thumb {
     color: var(--neon-cyan);
     margin-bottom: 15px;
 }
+

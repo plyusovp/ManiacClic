@@ -31,18 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const notification = document.getElementById('notification');
     const successModal = document.getElementById('success-modal');
     const balanceCounter = document.getElementById('balance-counter');
-
-    // --- ОСНОВНАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ UI ---
-    // ИСПРАВЛЕНО: Функция вынесена в общую область видимости
-    function updateBalanceUI() {
-        if (balanceCounter) {
-            balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
-        }
-        const withdrawBalance = document.getElementById('withdraw-balance');
-        if (withdrawBalance) {
-            withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
-        }
-    }
+    const energyBar = document.getElementById('energy-bar');
+    const energyCounter = document.getElementById('energy-counter');
+    
+    // --- THREE.JS ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
+    let scene, camera, renderer, starMesh, pointLight;
 
 
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
@@ -85,36 +78,69 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.lastUpdate = Date.now();
         saveState();
     }
+    
+    // --- ОБНОВЛЕНИЕ UI И АНИМАЦИИ (Вынесены для глобального доступа) ---
+    function updateBalanceUI() {
+        if (balanceCounter) {
+            balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
+        const withdrawBalance = document.getElementById('withdraw-balance');
+        if (withdrawBalance) {
+            withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
+    }
+    
+    function updateEnergyUI() {
+        const percentage = (gameState.energy / config.maxEnergy) * 100;
+        energyBar.style.width = `${percentage}%`;
+        energyCounter.innerText = `${Math.floor(gameState.energy)}/${config.maxEnergy}`;
+    }
 
-    // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦ ---
+    function checkEnergy() {
+        // Управляем состоянием disabled контейнера, а не самой звезды
+        const starContainer = document.getElementById('star-container');
+        if (starContainer) {
+            starContainer.classList.toggle('disabled', gameState.energy < config.energyPerClick);
+        }
+    }
 
-    // Инициализация игрового экрана
+    function playClickAnimations(x, y) {
+        const textAnim = document.createElement('div');
+        textAnim.className = 'click-animation-text';
+        textAnim.innerText = `+${config.starPerClick}`;
+        document.body.appendChild(textAnim);
+        textAnim.style.left = `${x - 15}px`;
+        textAnim.style.top = `${y - 30}px`;
+        setTimeout(() => textAnim.remove(), 1000);
+
+        for (let i = 0; i < 5; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            document.body.appendChild(particle);
+            const size = Math.random() * 5 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            const angle = Math.random() * 360;
+            const distance = Math.random() * 80 + 50;
+            const endX = Math.cos(angle * Math.PI / 180) * distance;
+            const endY = Math.sin(angle * Math.PI / 180) * distance;
+            particle.style.setProperty('--x', `${endX}px`);
+            particle.style.setProperty('--y', `${endY}px`);
+            setTimeout(() => particle.remove(), 800);
+        }
+    }
+
+    // --- ИНИЦИАЛИЗАЦИЯ ИГРОВОГО ЭКРАНА ---
     function initGamePage() {
-        const clickableStar = document.getElementById('clickable-star');
-        const energyBar = document.getElementById('energy-bar');
-        const energyCounter = document.getElementById('energy-counter');
-
         loadState();
         updateBalanceUI();
         updateEnergyUI();
         checkEnergy();
+        initThreeJSScene(); // Запускаем 3D-сцену
 
-        clickableStar.addEventListener('click', (event) => {
-            if (gameState.energy >= config.energyPerClick) {
-                gameState.energy -= config.energyPerClick;
-                gameState.balance += config.starPerClick;
-
-                updateBalanceUI();
-                updateEnergyUI();
-                playClickAnimations(event.clientX, event.clientY);
-
-                saveState();
-            } else {
-                showNotification();
-            }
-            checkEnergy();
-        });
-
+        // Таймер регенерации энергии
         setInterval(() => {
             if (gameState.energy < config.maxEnergy) {
                 gameState.energy = Math.min(config.maxEnergy, gameState.energy + config.energyRegenRate);
@@ -124,50 +150,111 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
             }
         }, config.energyRegenInterval);
+    }
 
-        function updateEnergyUI() {
-            const percentage = (gameState.energy / config.maxEnergy) * 100;
-            energyBar.style.width = `${percentage}%`;
-            energyCounter.innerText = `${Math.floor(gameState.energy)}/${config.maxEnergy}`;
-        }
+    // --- ЛОГИКА THREE.JS ---
+    function initThreeJSScene() {
+        const container = document.getElementById('star-container');
+        if (!container || !THREE) return;
 
-        function checkEnergy() {
-            clickableStar.classList.toggle('disabled', gameState.energy < config.energyPerClick);
-        }
+        // 1. Scene
+        scene = new THREE.Scene();
 
-        function playClickAnimations(x, y) {
-            clickableStar.classList.add('clicked');
-            setTimeout(() => clickableStar.classList.remove('clicked'), 100);
+        // 2. Camera
+        camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.z = 4;
 
-            const textAnim = document.createElement('div');
-            textAnim.className = 'click-animation-text';
-            textAnim.innerText = `+${config.starPerClick}`;
-            document.body.appendChild(textAnim);
-            textAnim.style.left = `${x - 15}px`;
-            textAnim.style.top = `${y - 30}px`;
-            setTimeout(() => textAnim.remove(), 1000);
+        // 3. Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.innerHTML = ''; // Очищаем на случай повторной инициализации
+        container.appendChild(renderer.domElement);
 
-            for (let i = 0; i < 5; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                document.body.appendChild(particle);
-                const size = Math.random() * 5 + 2;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${x}px`;
-                particle.style.top = `${y}px`;
-                const angle = Math.random() * 360;
-                const distance = Math.random() * 80 + 50;
-                const endX = Math.cos(angle * Math.PI / 180) * distance;
-                const endY = Math.sin(angle * Math.PI / 180) * distance;
-                particle.style.setProperty('--x', `${endX}px`);
-                particle.style.setProperty('--y', `${endY}px`);
-                setTimeout(() => particle.remove(), 800);
+        // 4. Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        pointLight = new THREE.PointLight(0x00ffff, 1.5, 100);
+        pointLight.position.set(0, 0, 5);
+        scene.add(pointLight);
+        
+        // 5. Star Geometry & Material
+        const geometry = new THREE.IcosahedronGeometry(1.5, 1);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x8a2be2,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.4,
+            metalness: 0.8,
+            roughness: 0.3,
+        });
+        starMesh = new THREE.Mesh(geometry, material);
+        scene.add(starMesh);
+        
+        // 6. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            if (starMesh) {
+                starMesh.rotation.x += 0.002;
+                starMesh.rotation.y += 0.003;
             }
+            if(pointLight){
+                const time = Date.now() * 0.001;
+                pointLight.position.x = Math.sin(time * 0.7) * 4;
+                pointLight.position.y = Math.cos(time * 0.5) * 4;
+                pointLight.position.z = Math.cos(time * 0.3) * 4;
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // 7. Event Listeners
+        renderer.domElement.addEventListener('click', onStarClick, false);
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function onStarClick(event) {
+        if (gameState.energy < config.energyPerClick) {
+            showNotification();
+            return;
+        }
+
+        const container = document.getElementById('star-container');
+        const rect = container.getBoundingClientRect();
+        const mouse = new THREE.Vector2(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(starMesh);
+
+        if (intersects.length > 0) {
+            gameState.energy -= config.energyPerClick;
+            gameState.balance += config.starPerClick;
+
+            updateBalanceUI();
+            updateEnergyUI();
+            checkEnergy();
+            
+            // Анимация клика на 3D-модели
+            starMesh.scale.set(0.9, 0.9, 0.9);
+            setTimeout(() => starMesh.scale.set(1, 1, 1), 100);
+            
+            playClickAnimations(event.clientX, event.clientY);
+            saveState();
         }
     }
 
-    // Инициализация страницы вывода (вызывается при переходе)
+    function onWindowResize() {
+        const container = document.getElementById('star-container');
+        if (!container || !renderer) return;
+
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // --- ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ ВЫВОДА ---
     function initWithdrawPage() {
         const slider = document.getElementById('withdraw-slider');
         const calcAmount = document.getElementById('calc-amount');
@@ -176,15 +263,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const calcBotStars = document.getElementById('calc-bot-stars');
         const withdrawButton = document.getElementById('withdraw-button');
 
-        updateBalanceUI(); // Обновляем баланс на странице вывода
+        updateBalanceUI();
         const userBalance = Math.floor(gameState.balance);
+        const minWithdraw = 200;
+        const step = 200;
 
-        const maxWithdraw = Math.floor(userBalance / 200) * 200;
-        slider.max = maxWithdraw > 0 ? maxWithdraw : 200;
-        slider.disabled = userBalance < 200;
-        slider.value = 200;
+        const maxWithdraw = Math.floor(userBalance / step) * step;
 
-        slider.oninput = updateCalculator;
+        slider.min = minWithdraw;
+        slider.step = step;
+
+        if (maxWithdraw >= minWithdraw) {
+            slider.disabled = false;
+            slider.max = maxWithdraw;
+            slider.value = minWithdraw;
+        } else {
+            slider.disabled = true;
+            slider.max = minWithdraw;
+            slider.value = minWithdraw;
+        }
 
         function updateCalculator() {
             const amount = parseInt(slider.value);
@@ -196,22 +293,23 @@ document.addEventListener('DOMContentLoaded', () => {
             calcCommission.innerText = `✨ ${commission.toLocaleString('ru-RU')}`;
             calcTotal.innerText = `✨ ${totalDeducted.toLocaleString('ru-RU')}`;
             calcBotStars.innerText = `⭐ ${botStars.toLocaleString('ru-RU')}`;
-            withdrawButton.disabled = totalDeducted > userBalance;
+            withdrawButton.disabled = slider.disabled || (totalDeducted > userBalance);
         }
 
+        slider.oninput = updateCalculator;
+
         withdrawButton.onclick = () => {
+            if (withdrawButton.disabled) return;
             const amount = parseInt(slider.value);
             const commission = Math.round(amount * 0.07);
             const totalDeducted = amount + commission;
-            const botStars = amount / 200;
 
             if (totalDeducted <= userBalance) {
+                const botStars = amount / 200;
                 const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
                 try {
                     tg.sendData(JSON.stringify(jsonData));
-                } catch(e) {
-                    console.error("Couldn't send data to Telegram", e);
-                }
+                } catch(e) { console.error("Couldn't send data to Telegram", e); }
 
                 gameState.balance -= totalDeducted;
                 saveState();
