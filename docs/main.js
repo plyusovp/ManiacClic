@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- ЭЛЕМЕНТЫ DOM ---
+    const loadingScreen = document.getElementById('loading-screen');
     const gameScreen = document.getElementById('game-screen');
     const withdrawScreen = document.getElementById('withdraw-screen');
     const goToWithdrawBtn = document.getElementById('go-to-withdraw');
@@ -58,9 +59,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- ФУНКЦИИ УПРАВЛЕНИЯ ЭКРАНАМИ ---
     function showScreen(screen) {
+        if (loadingScreen) loadingScreen.classList.add('hidden');
         if (gameScreen) gameScreen.classList.add('hidden');
         if (withdrawScreen) withdrawScreen.classList.add('hidden');
         if (screen) screen.classList.remove('hidden');
+    }
+
+    function hideLoadingScreen() {
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            // Показываем игровой экран после скрытия загрузочного
+            setTimeout(() => {
+                showScreen(gameScreen);
+            }, 300); // Небольшая задержка для плавного перехода
+        }
+    }
+
+    function updateLoadingProgress(percent) {
+        const progressBar = document.querySelector('.loading-progress');
+        const loadingMessage = document.querySelector('.loading-message');
+        
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        if (loadingMessage) {
+            if (percent < 30) {
+                loadingMessage.textContent = 'Загружаем звёзды...';
+            } else if (percent < 60) {
+                loadingMessage.textContent = 'Подготавливаем космос...';
+            } else if (percent < 90) {
+                loadingMessage.textContent = 'Почти готово...';
+            } else {
+                loadingMessage.textContent = 'Завершаем загрузку...';
+            }
+        }
     }
 
     if (goToWithdrawBtn) {
@@ -172,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkEnergy();
         initThreeJSScene();
         startEnergyRegen();
+        // Не показываем игровой экран сразу - он будет показан после загрузки
     }
 
     // --- УПРАВЛЕНИЕ ТАЙМЕРОМ РЕГЕНЕРАЦИИ ---
@@ -240,8 +274,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 scene.add(starMesh);
                 animate(); // Запускаем анимацию только после загрузки модели
+                
+                // Скрываем загрузочный экран после загрузки модели
+                setTimeout(() => {
+                    hideLoadingScreen();
+                }, 500); // Небольшая задержка для плавного перехода
             },
-            undefined,
+            function (progress) {
+                // Обновляем прогресс загрузки
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                updateLoadingProgress(percent);
+            },
             function (error) {
                 console.error('An error happened during model loading:', error);
                 const geometry = new THREE.IcosahedronGeometry(1.5, 1);
@@ -251,6 +294,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 starMesh.rotation.set(baseRotation.x, baseRotation.y, baseRotation.z);
                 scene.add(starMesh);
                 animate(); // Запускаем анимацию, даже если модель не загрузилась
+                
+                // Скрываем загрузочный экран даже при ошибке
+                setTimeout(() => {
+                    hideLoadingScreen();
+                }, 500);
             }
         );
         
@@ -509,7 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Первоначальный запуск
     createBackgroundStars();
+    
+    // Показываем загрузочный экран сначала
+    if (loadingScreen) {
+        loadingScreen.classList.remove('hidden');
+    }
+    
+    // Инициализируем игру (это запустит загрузку 3D модели)
     initGamePage();
-    showScreen(gameScreen);
+    
+    // Игровой экран будет показан после скрытия загрузочного экрана
 });
 
