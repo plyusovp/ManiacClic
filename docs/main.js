@@ -570,11 +570,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (totalDeducted <= userBalance) {
                 const botStars = amount / 200;
-                const jsonData = { action: "withdraw", withdraw_amount: amount, commission_amount: commission, total_deducted: totalDeducted, bot_stars_received: botStars };
-                try {
-                    tg.sendData(JSON.stringify(jsonData));
-                } catch(e) { console.error("Couldn't send data to Telegram", e); }
+                
+                // Получаем данные пользователя
+                const userData = getTelegramUserData();
+                
+                // Подготавливаем данные для отправки боту
+                const withdrawData = {
+                    action: "withdraw",
+                    user_id: userData?.id || null,
+                    user_info: userData,
+                    withdraw_amount: amount,
+                    commission_amount: commission,
+                    total_deducted: totalDeducted,
+                    bot_stars_received: botStars,
+                    timestamp: Date.now(),
+                    game_version: "1.0"
+                };
+                
+                // Отправляем данные боту
+                if (!sendDataToBot(withdrawData)) {
+                    alert('Ошибка отправки данных. Попробуйте еще раз.');
+                    return;
+                }
 
+                // Обновляем локальное состояние только после успешной отправки
                 gameState.balance -= totalDeducted;
                 gameState.withdrawalsToday.count++;
                 saveState();
@@ -594,6 +613,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (withdrawBalance) {
             withdrawBalance.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
+        }
+    }
+
+    // --- ФУНКЦИИ ДЛЯ ИНТЕГРАЦИИ С БОТОМ ---
+    function getTelegramUserData() {
+        try {
+            const userData = tg.initDataUnsafe?.user;
+            if (userData) {
+                return {
+                    id: userData.id,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    username: userData.username,
+                    language_code: userData.language_code
+                };
+            }
+        } catch (e) {
+            console.error('Ошибка получения данных пользователя:', e);
+        }
+        return null;
+    }
+
+    function sendDataToBot(data) {
+        try {
+            console.log('Отправляем данные боту:', data);
+            tg.sendData(JSON.stringify(data));
+            return true;
+        } catch (e) {
+            console.error('Ошибка отправки данных в Telegram:', e);
+            return false;
         }
     }
 
@@ -629,6 +678,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Первоначальный запуск
     createBackgroundStars();
+    
+    // Логируем данные Telegram WebApp для отладки
+    console.log('Telegram WebApp данные:', {
+        initData: tg.initData,
+        initDataUnsafe: tg.initDataUnsafe,
+        user: getTelegramUserData()
+    });
     
     // Показываем загрузочный экран сначала
     if (loadingScreen) {
