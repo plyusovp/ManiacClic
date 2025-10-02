@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
             withdrawsToday.textContent = `${gameState.withdrawalsToday.count}/2`;
         }
 
-        if (gameState.withdrawalsToday.count >= 2) {
+        if (false) { // Временно отключено ограничение на вывод
             withdrawStatusText.innerText = `Вы достигли дневного лимита операций на сегодня (2/2). Попробуйте завтра.`;
             withdrawInfo.classList.remove('hidden');
         } else {
@@ -557,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             withdrawButtonsContainer.appendChild(maxButton);
 
-            withdrawStatusText.innerText = `Сегодня вы можете вывести средства ещё ${2 - gameState.withdrawalsToday.count} раз. Выберите сумму:`;
+            withdrawStatusText.innerText = `Ограничения на вывод временно отключены. Выберите сумму:`;
         }
 
         // Логика подтверждения вывода
