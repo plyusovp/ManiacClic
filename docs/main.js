@@ -588,8 +588,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 // Отправляем данные боту
-                if (!sendDataToBot(withdrawData)) {
-                    alert('Ошибка отправки данных. Попробуйте еще раз.');
+                console.log('Попытка отправки данных боту:', withdrawData);
+                
+                // Пробуем разные способы отправки данных
+                let dataSent = false;
+                
+                // Способ 1: tg.sendData
+                if (typeof tg.sendData === 'function') {
+                    try {
+                        tg.sendData(JSON.stringify(withdrawData));
+                        console.log('✅ Данные отправлены через tg.sendData');
+                        dataSent = true;
+                    } catch (error) {
+                        console.error('❌ Ошибка tg.sendData:', error);
+                    }
+                }
+                
+                // Способ 2: tg.MainButton (если первый не сработал)
+                if (!dataSent && tg.MainButton) {
+                    try {
+                        tg.MainButton.setText('Вывод выполнен!');
+                        tg.MainButton.show();
+                        tg.MainButton.onClick(() => {
+                            tg.close();
+                        });
+                        console.log('✅ Используем MainButton как fallback');
+                        dataSent = true;
+                    } catch (error) {
+                        console.error('❌ Ошибка MainButton:', error);
+                    }
+                }
+                
+                // Способ 3: alert с данными для копирования
+                if (!dataSent) {
+                    const dataString = JSON.stringify(withdrawData, null, 2);
+                    alert('WebApp API недоступен. Скопируйте данные:\n\n' + dataString);
+                    console.log('❌ Все способы отправки не сработали');
                     return;
                 }
 
@@ -680,11 +714,13 @@ document.addEventListener('DOMContentLoaded', () => {
     createBackgroundStars();
     
     // Логируем данные Telegram WebApp для отладки
-    console.log('Telegram WebApp данные:', {
-        initData: tg.initData,
-        initDataUnsafe: tg.initDataUnsafe,
-        user: getTelegramUserData()
-    });
+    console.log('=== ДИАГНОСТИКА TELEGRAM WEBAPP ===');
+    console.log('tg объект:', tg);
+    console.log('tg.sendData функция:', typeof tg.sendData);
+    console.log('initData:', tg.initData);
+    console.log('initDataUnsafe:', tg.initDataUnsafe);
+    console.log('user данные:', getTelegramUserData());
+    console.log('=====================================');
     
     // Показываем загрузочный экран сначала
     if (loadingScreen) {
