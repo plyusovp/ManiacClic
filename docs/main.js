@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const withdrawAmounts = [200, 400, 600, 800, 1000, 1600, 2200];
+        const withdrawAmounts = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
         const userBalance = Math.floor(gameState.balance);
         let selectedAmount = 0;
         let selectedButton = null;
@@ -517,12 +517,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 withdrawButtonsContainer.appendChild(button);
             });
             
-            // Кнопка MAX
-            const maxAmount = Math.floor(userBalance / (1 + getCommission(userBalance))) || 0;
-            const maxCommission = maxAmount * getCommission(maxAmount);
-            const maxTotalDeducted = maxAmount + maxCommission;
-            const maxBotStars = maxAmount / 200;
-            const isMaxDisabled = maxAmount < 200 || maxTotalDeducted > userBalance;
+            // Кнопка MAX - рассчитываем максимальную сумму, кратной 200 (чтобы получить целое число звёзд)
+            let maxAmount = 0;
+            let maxCommission = 0;
+            let maxTotalDeducted = 0;
+            let maxBotStars = 0;
+            
+            // Находим максимальную сумму, кратную 200, которую можно вывести
+            for (let amount = 200; amount <= userBalance; amount += 200) {
+                const commission = amount * getCommission(amount);
+                const totalDeducted = amount + commission;
+                
+                if (totalDeducted <= userBalance) {
+                    maxAmount = amount;
+                    maxCommission = commission;
+                    maxTotalDeducted = totalDeducted;
+                    maxBotStars = amount / 200;
+                } else {
+                    break;
+                }
+            }
+            
+            const isMaxDisabled = maxAmount < 200;
 
             const maxButton = document.createElement('button');
             maxButton.className = `withdraw-btn max-btn ${isMaxDisabled ? 'disabled' : ''}`;

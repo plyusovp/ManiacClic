@@ -19,7 +19,7 @@
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Exo 2', 'Poppins', sans-serif;
     background-color: var(--bg-dark-start);
     color: var(--text-primary);
     overflow: hidden;
@@ -142,6 +142,7 @@ body {
 
 /* Текст загрузки */
 .loading-text h2 {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--neon-cyan);
@@ -340,6 +341,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     text-shadow: 0 0 10px var(--neon-cyan);
@@ -549,6 +551,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
     font-size: 1.8rem;
     font-weight: 700;
     color: var(--neon-cyan);
@@ -608,6 +611,7 @@ body {
 }
 
 .balance-amount {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--neon-cyan);
@@ -651,9 +655,16 @@ body {
 /* Сетка кнопок */
 .withdraw-buttons-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .withdraw-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
 }
 
 /* Креативные кнопки выбора суммы */
@@ -661,10 +672,10 @@ body {
     position: relative;
     background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(0, 255, 255, 0.1));
     border: 2px solid rgba(0, 255, 255, 0.3);
-    border-radius: 16px;
-    padding: 20px 15px;
+    border-radius: 14px;
+    padding: 15px 10px;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -673,9 +684,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    min-height: 80px;
     justify-content: center;
+    gap: 4px;
+    min-height: 80px;
+    text-align: center;
 }
 
 .withdraw-btn::before {
@@ -764,22 +776,29 @@ body {
 
 /* Сумма на кнопке */
 .btn-amount {
-    font-size: 1.4rem;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--neon-cyan);
     text-shadow: 0 0 10px var(--neon-cyan);
+    text-align: center;
+    line-height: 1.2;
 }
 
 .btn-stars {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     opacity: 0.8;
+    text-align: center;
+    line-height: 1.2;
 }
 
 .btn-commission {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--neon-pink);
     font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
 }
 
 /* Информационная карточка */
