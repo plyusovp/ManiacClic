@@ -423,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const withdrawStatusText = document.getElementById('withdraw-status-text');
         const withdrawInfo = document.getElementById('withdraw-info');
         const withdrawConfirmBtn = document.getElementById('withdraw-confirm-button');
+        const withdrawsToday = document.getElementById('withdraws-today');
         
         if (!withdrawBalance || !withdrawButtonsContainer || !withdrawStatusText || !withdrawInfo || !withdrawConfirmBtn) {
             console.error("One or more withdrawal page elements not found.");
@@ -432,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const withdrawAmounts = [200, 400, 600, 800, 1000, 1600, 2200];
         const userBalance = Math.floor(gameState.balance);
         let selectedAmount = 0;
+        let selectedButton = null;
 
         // Функция для расчета комиссии в зависимости от суммы
         function getCommission(amount) {
@@ -445,16 +447,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Обновление UI вывода
-        function updateWithdrawUI(amount, isMax = false) {
+        function updateWithdrawUI(amount, isMax = false, buttonElement = null) {
+            // Убираем выделение с предыдущей кнопки
+            if (selectedButton) {
+                selectedButton.classList.remove('selected');
+            }
+            
+            // Выделяем новую кнопку
+            if (buttonElement) {
+                selectedButton = buttonElement;
+                buttonElement.classList.add('selected');
+            }
+            
             selectedAmount = amount;
             const commission = amount * getCommission(amount);
             const totalDeducted = amount + commission;
+            const botStars = amount / 200;
 
-            withdrawStatusText.innerText = `Вы получите ⭐ ${Math.floor(amount / 200).toLocaleString('ru-RU')} звёзд за вычетом комиссии ✨ ${Math.floor(commission).toLocaleString('ru-RU')}. Всего будет списано ✨ ${Math.floor(totalDeducted).toLocaleString('ru-RU')}.`;
+            // Обновляем статус
+            withdrawStatusText.innerText = `Вы получите ⭐ ${botStars.toLocaleString('ru-RU')} звёзд в боте`;
+
+            // Обновляем детали в карточке
+            document.getElementById('withdraw-amount').textContent = `${amount.toLocaleString('ru-RU')} ✨`;
+            document.getElementById('withdraw-commission').textContent = `${Math.floor(commission).toLocaleString('ru-RU')} ✨`;
+            document.getElementById('withdraw-total').textContent = `${Math.floor(totalDeducted).toLocaleString('ru-RU')} ✨`;
 
             withdrawInfo.classList.remove('hidden');
             withdrawConfirmBtn.classList.remove('hidden');
-            withdrawConfirmBtn.disabled = (amount + (amount * getCommission(amount))) > userBalance;
+            withdrawConfirmBtn.disabled = totalDeducted > userBalance;
         }
 
         // Проверка дневного лимита
@@ -463,26 +483,62 @@ document.addEventListener('DOMContentLoaded', () => {
         withdrawInfo.classList.add('hidden');
         withdrawConfirmBtn.classList.add('hidden');
 
+        // Обновляем статистику
+        if (withdrawsToday) {
+            withdrawsToday.textContent = `${gameState.withdrawalsToday.count}/2`;
+        }
+
         if (gameState.withdrawalsToday.count >= 2) {
             withdrawStatusText.innerText = `Вы достигли дневного лимита операций на сегодня (2/2). Попробуйте завтра.`;
             withdrawInfo.classList.remove('hidden');
         } else {
             // Создание кнопок для вывода
             withdrawAmounts.forEach(amount => {
+                const commission = amount * getCommission(amount);
+                const totalDeducted = amount + commission;
+                const botStars = amount / 200;
+                const isDisabled = totalDeducted > userBalance;
+
                 const button = document.createElement('button');
-                button.className = 'withdraw-btn';
-                button.innerText = `${amount}`;
-                button.disabled = (amount + (amount * getCommission(amount))) > userBalance;
-                button.addEventListener('click', () => updateWithdrawUI(amount));
+                button.className = `withdraw-btn ${isDisabled ? 'disabled' : ''}`;
+                button.disabled = isDisabled;
+                
+                button.innerHTML = `
+                    <div class="btn-amount">${amount.toLocaleString('ru-RU')}</div>
+                    <div class="btn-stars">⭐ ${botStars.toLocaleString('ru-RU')} звёзд</div>
+                    <div class="btn-commission">Комиссия: ${Math.floor(commission).toLocaleString('ru-RU')}</div>
+                `;
+                
+                button.addEventListener('click', () => {
+                    if (!isDisabled) {
+                        updateWithdrawUI(amount, false, button);
+                    }
+                });
                 withdrawButtonsContainer.appendChild(button);
             });
+            
             // Кнопка MAX
-            const maxButton = document.createElement('button');
-            maxButton.className = 'withdraw-btn';
-            maxButton.innerText = 'MAX';
             const maxAmount = Math.floor(userBalance / (1 + getCommission(userBalance))) || 0;
-            maxButton.disabled = maxAmount < 200;
-            maxButton.addEventListener('click', () => updateWithdrawUI(maxAmount, true));
+            const maxCommission = maxAmount * getCommission(maxAmount);
+            const maxTotalDeducted = maxAmount + maxCommission;
+            const maxBotStars = maxAmount / 200;
+            const isMaxDisabled = maxAmount < 200 || maxTotalDeducted > userBalance;
+
+            const maxButton = document.createElement('button');
+            maxButton.className = `withdraw-btn max-btn ${isMaxDisabled ? 'disabled' : ''}`;
+            maxButton.disabled = isMaxDisabled;
+            
+            maxButton.innerHTML = `
+                <div class="btn-amount">${maxAmount.toLocaleString('ru-RU')}</div>
+                <div class="btn-stars">⭐ ${maxBotStars.toLocaleString('ru-RU')} звёзд</div>
+                <div class="btn-commission">Комиссия: ${Math.floor(maxCommission).toLocaleString('ru-RU')}</div>
+            `;
+            
+            maxButton.addEventListener('click', () => {
+                if (!isMaxDisabled) {
+                    updateWithdrawUI(maxAmount, true, maxButton);
+                }
+            });
             withdrawButtonsContainer.appendChild(maxButton);
 
             withdrawStatusText.innerText = `Сегодня вы можете вывести средства ещё ${2 - gameState.withdrawalsToday.count} раз. Выберите сумму:`;

@@ -90,26 +90,82 @@
     <!-- ЭКРАН ВЫВОДА -->
     <div id="withdraw-screen" class="screen hidden">
         <div class="container withdraw-container">
-            <button id="back-from-withdraw" class="back-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                Назад
-            </button>
-            <h1>Вывод звёзд</h1>
-            <div class="current-balance">
-                Ваш баланс:
-                <svg class="balance-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                <span id="withdraw-balance">0</span>
+            <!-- Заголовок с кнопкой назад -->
+            <div class="withdraw-header">
+                <button id="back-from-withdraw" class="back-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span>Назад</span>
+                </button>
+                <h1 class="withdraw-title">
+                    <svg class="title-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    Вывод звёзд
+                </h1>
             </div>
 
-            <!-- Контейнер для кнопок, создаваемых динамически -->
-            <div id="withdraw-buttons-container" class="withdraw-buttons-container"></div>
-            
-            <!-- Статус и информация о выводе -->
-            <div id="withdraw-info" class="withdraw-info hidden">
-                <p id="withdraw-status-text" class="status-text"></p>
-                <button id="withdraw-confirm-button" class="nav-button hidden">Подтвердить</button>
+            <!-- Карточка баланса -->
+            <div class="balance-card">
+                <div class="balance-header">
+                    <svg class="balance-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    <span class="balance-label">Ваш баланс</span>
+                </div>
+                <div class="balance-amount" id="withdraw-balance">0</div>
+                <div class="balance-subtitle">Доступно для вывода</div>
+            </div>
+
+            <!-- Секция выбора суммы -->
+            <div class="amount-selection">
+                <h3 class="section-title">Выберите сумму</h3>
+                <div id="withdraw-buttons-container" class="withdraw-buttons-grid"></div>
             </div>
             
+            <!-- Информация о выводе -->
+            <div id="withdraw-info" class="withdraw-info hidden">
+                <div class="info-card">
+                    <div class="info-header">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <span>Детали вывода</span>
+                    </div>
+                    <div class="info-content">
+                        <p id="withdraw-status-text" class="status-text"></p>
+                        <div class="withdraw-summary">
+                            <div class="summary-row">
+                                <span class="summary-label">Сумма вывода:</span>
+                                <span class="summary-value" id="withdraw-amount">0</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Комиссия:</span>
+                                <span class="summary-value commission" id="withdraw-commission">0</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span class="summary-label">Итого списано:</span>
+                                <span class="summary-value" id="withdraw-total">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button id="withdraw-confirm-button" class="confirm-button hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Подтвердить вывод</span>
+                </button>
+            </div>
+
+            <!-- Статистика выводов -->
+            <div class="withdraw-stats">
+                <div class="stat-item">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="withdraws-today">0/2</div>
+                        <div class="stat-label">Выводов сегодня</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-value">24ч</div>
+                        <div class="stat-label">Лимит обновляется</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

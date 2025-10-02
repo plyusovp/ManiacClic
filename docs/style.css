@@ -509,39 +509,482 @@ body {
 /* --- ЭКРАН ВЫВОДА (withdraw.html) --- */
 .withdraw-container {
     justify-content: flex-start;
-    padding-top: 20px;
+    padding: 20px;
+    gap: 25px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+/* Заголовок экрана */
+.withdraw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
 }
 
 .back-button {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.withdraw-container h1 {
-    font-size: 2rem;
-    margin-top: 30px;
-    margin-bottom: 10px;
-    text-align: center;
-}
-
-.current-balance {
-    font-size: 1.2rem;
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
-    background-color: rgba(0,0,0,0.2);
-    padding: 10px 20px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 16px;
     border-radius: 12px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.withdraw-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    margin: 0;
+}
+
+.title-icon {
+    width: 32px;
+    height: 32px;
+    color: #ffd700;
+    filter: drop-shadow(0 0 10px #ffd700);
+}
+
+/* Карточка баланса */
+.balance-card {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(0, 255, 255, 0.1));
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+}
+
+.balance-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan), var(--neon-pink));
+}
+
+.balance-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.balance-icon {
+    width: 24px;
+    height: 24px;
+    color: #ffd700;
+    filter: drop-shadow(0 0 8px #ffd700);
+}
+
+.balance-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.balance-amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    margin-bottom: 8px;
+    line-height: 1;
+}
+
+.balance-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+/* Секция выбора суммы */
+.amount-selection {
+    margin-bottom: 25px;
+}
+
+.section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+    border-radius: 1px;
+}
+
+/* Сетка кнопок */
+.withdraw-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Креативные кнопки выбора суммы */
+.withdraw-btn {
+    position: relative;
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(0, 255, 255, 0.1));
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 20px 15px;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-height: 80px;
+    justify-content: center;
+}
+
+.withdraw-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.withdraw-btn:hover::before {
+    left: 100%;
+}
+
+.withdraw-btn:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 255, 0.3),
+        inset 0 0 20px rgba(0, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.withdraw-btn:active {
+    transform: translateY(0);
+}
+
+.withdraw-btn.selected {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(138, 43, 226, 0.3));
+    border-color: var(--neon-cyan);
+    box-shadow: 
+        0 0 25px rgba(0, 255, 255, 0.4),
+        inset 0 0 25px rgba(0, 255, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.withdraw-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(85, 85, 85, 0.2);
+    border-color: rgba(85, 85, 85, 0.3);
+}
+
+.withdraw-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Специальная кнопка MAX */
+.withdraw-btn.max-btn {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(255, 107, 53, 0.1));
+    border-color: rgba(255, 0, 255, 0.4);
+    position: relative;
+}
+
+.withdraw-btn.max-btn::after {
+    content: '🔥';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1.2rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.withdraw-btn.max-btn:hover {
+    border-color: var(--neon-pink);
+    box-shadow: 
+        0 0 25px rgba(255, 0, 255, 0.4),
+        inset 0 0 25px rgba(255, 0, 255, 0.1);
+}
+
+.withdraw-btn.max-btn.selected {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.4), rgba(255, 107, 53, 0.3));
+    border-color: var(--neon-pink);
+    box-shadow: 
+        0 0 30px rgba(255, 0, 255, 0.5),
+        inset 0 0 30px rgba(255, 0, 255, 0.2);
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Сумма на кнопке */
+.btn-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.btn-stars {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.btn-commission {
+    font-size: 0.8rem;
+    color: var(--neon-pink);
+    font-weight: 500;
+}
+
+/* Информационная карточка */
+.withdraw-info {
+    margin-bottom: 25px;
+}
+
+.info-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(138, 43, 226, 0.1));
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+.info-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--neon-cyan);
+}
+
+.info-content {
+    color: var(--text-primary);
+}
+
+.status-text {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.withdraw-summary {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-row.total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--neon-cyan);
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+.summary-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.summary-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.summary-value.commission {
+    color: var(--neon-pink);
+}
+
+/* Кнопка подтверждения */
+.confirm-button {
+    width: 100%;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 18px 24px;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.confirm-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.confirm-button:hover::before {
+    left: 100%;
+}
+
+.confirm-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 255, 255, 0.4);
+}
+
+.confirm-button:active {
+    transform: translateY(0);
+}
+
+.confirm-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--disabled-color);
+    box-shadow: none;
+}
+
+.confirm-button:disabled:hover {
+    transform: none;
+}
+
+/* Статистика выводов */
+.withdraw-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    border-color: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.1);
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
 }
 
 .slider-group {
