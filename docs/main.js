@@ -733,3 +733,514 @@ document.addEventListener('DOMContentLoaded', () => {
     // Игровой экран будет показан после скрытия загрузочного экрана
 });
 
+// ==================== ИГРА КРАШ ====================
+
+// Переменные для игры Краш
+let crashGame = {
+    isActive: false,
+    currentMultiplier: 1.00,
+    targetMultiplier: 1.00,
+    gameState: 'WAITING', // WAITING, IN_PROGRESS, CRASHED
+    betAmount: 10,
+    userBet: null,
+    hasCashedOut: false,
+    roundTime: 0,
+    maxRoundTime: 10000, // 10 секунд максимум
+    chart: null,
+    history: [],
+    roundStartTime: 0,
+    animationId: null
+};
+
+// Инициализация игры Краш
+function initCrashGame() {
+    console.log('Инициализация игры Краш...');
+    
+    // Инициализируем график
+    initCrashChart();
+    
+    // Обновляем баланс
+    updateCrashBalance();
+    
+    // Генерируем начальную историю
+    generateInitialHistory();
+    
+    // Запускаем игровой цикл
+    startCrashGameLoop();
+}
+
+// Инициализация графика
+function initCrashChart() {
+    const ctx = document.getElementById('crash-chart');
+    if (!ctx) return;
+    
+    crashGame.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Множитель',
+                data: [],
+                borderColor: '#00ffff',
+                backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    beginAtZero: true,
+                    min: 1.00,
+                    max: 10.00,
+                    ticks: {
+                        color: '#00ffff',
+                        font: {
+                            family: 'Orbitron, Exo 2, sans-serif',
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        callback: function(value) {
+                            return value.toFixed(2) + 'x';
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 255, 255, 0.2)'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false
+            }
+        }
+    });
+}
+
+// Обновление баланса в игре Краш
+function updateCrashBalance() {
+    const balanceElement = document.getElementById('crash-balance');
+    if (balanceElement) {
+        balanceElement.textContent = gameState.stars.toLocaleString();
+    }
+}
+
+// Генерация начальной истории
+function generateInitialHistory() {
+    const history = [];
+    for (let i = 0; i < 15; i++) {
+        const multiplier = generateCrashMultiplier();
+        history.push(multiplier);
+    }
+    crashGame.history = history;
+    updateHistoryDisplay();
+}
+
+// Генерация множителя краша (Provably Fair)
+function generateCrashMultiplier() {
+    // Простая реализация для демонстрации
+    // В реальном приложении здесь должен быть более сложный алгоритм
+    const random = Math.random();
+    
+    // 3% шанс на мгновенный краш (house edge)
+    if (random < 0.03) {
+        return 1.00;
+    }
+    
+    // Остальные 97% - нормальное распределение
+    const normalized = (random - 0.03) / 0.97;
+    const multiplier = Math.max(1.00, 1000000 / (normalized * 1000000 + 1) * 0.99);
+    
+    return Math.min(multiplier, 1000.00); // Максимум 1000x
+}
+
+// Обновление отображения истории
+function updateHistoryDisplay() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
+    historyList.innerHTML = '';
+    
+    crashGame.history.slice(-15).reverse().forEach(multiplier => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.textContent = multiplier.toFixed(2) + 'x';
+        
+        // Цветовая кодировка
+        if (multiplier < 2.00) {
+            item.classList.add('low');
+        } else if (multiplier < 10.00) {
+            item.classList.add('medium');
+        } else {
+            item.classList.add('high');
+        }
+        
+        historyList.appendChild(item);
+    });
+}
+
+// Запуск игрового цикла
+function startCrashGameLoop() {
+    if (crashGame.animationId) {
+        cancelAnimationFrame(crashGame.animationId);
+    }
+    
+    crashGame.gameState = 'WAITING';
+    crashGame.currentMultiplier = 1.00;
+    crashGame.targetMultiplier = generateCrashMultiplier();
+    crashGame.userBet = null;
+    crashGame.hasCashedOut = false;
+    crashGame.roundTime = 0;
+    crashGame.roundStartTime = Date.now();
+    
+    updateGameStatus('Идет прием ставок');
+    updateMultiplierDisplay('1.00x');
+    updateMainActionButton();
+    resetChart();
+    
+    // Ожидание 5 секунд
+    setTimeout(() => {
+        if (crashGame.gameState === 'WAITING') {
+            startRound();
+        }
+    }, 5000);
+}
+
+// Начало раунда
+function startRound() {
+    crashGame.gameState = 'IN_PROGRESS';
+    crashGame.roundStartTime = Date.now();
+    
+    updateGameStatus('В игре!');
+    updateMainActionButton();
+    
+    // Запуск анимации роста множителя
+    animateMultiplier();
+}
+
+// Анимация роста множителя
+function animateMultiplier() {
+    if (crashGame.gameState !== 'IN_PROGRESS') return;
+    
+    const elapsed = Date.now() - crashGame.roundStartTime;
+    const progress = Math.min(elapsed / 10000, 1); // 10 секунд максимум
+    
+    // Нелинейный рост для создания напряжения
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    crashGame.currentMultiplier = 1 + (crashGame.targetMultiplier - 1) * easeProgress;
+    
+    // Обновляем отображение
+    updateMultiplierDisplay(crashGame.currentMultiplier.toFixed(2) + 'x');
+    updateChart(crashGame.currentMultiplier);
+    updateMainActionButton();
+    
+    // Проверяем, достигли ли целевого множителя
+    if (crashGame.currentMultiplier >= crashGame.targetMultiplier) {
+        crash();
+    } else {
+        crashGame.animationId = requestAnimationFrame(animateMultiplier);
+    }
+}
+
+// Краш
+function crash() {
+    crashGame.gameState = 'CRASHED';
+    crashGame.currentMultiplier = crashGame.targetMultiplier;
+    
+    updateGameStatus('Краш!');
+    updateMultiplierDisplay(crashGame.currentMultiplier.toFixed(2) + 'x');
+    updateChart(crashGame.currentMultiplier);
+    updateMainActionButton();
+    
+    // Обрабатываем результаты
+    processRoundResults();
+    
+    // Добавляем в историю
+    crashGame.history.push(crashGame.targetMultiplier);
+    if (crashGame.history.length > 50) {
+        crashGame.history.shift();
+    }
+    updateHistoryDisplay();
+    
+    // Пауза перед следующим раундом
+    setTimeout(() => {
+        startCrashGameLoop();
+    }, 3000);
+}
+
+// Обработка результатов раунда
+function processRoundResults() {
+    if (!crashGame.userBet) return;
+    
+    if (crashGame.hasCashedOut) {
+        // Пользователь успел вывести
+        const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
+        gameState.stars += winnings;
+        updateCrashBalance();
+        
+        // Показываем уведомление о выигрыше
+        showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+    } else {
+        // Пользователь проиграл
+        gameState.stars -= crashGame.userBet;
+        updateCrashBalance();
+        
+        // Показываем уведомление о проигрыше
+        showCrashNotification(`Проигрыш: ${crashGame.userBet} ⭐`, 'error');
+    }
+}
+
+// Обновление статуса игры
+function updateGameStatus(status) {
+    const statusElement = document.getElementById('game-status');
+    if (statusElement) {
+        statusElement.textContent = status;
+    }
+}
+
+// Обновление отображения множителя
+function updateMultiplierDisplay(multiplier) {
+    const displayElement = document.getElementById('multiplier-display');
+    if (displayElement) {
+        displayElement.textContent = multiplier;
+    }
+}
+
+// Обновление главной кнопки действия
+function updateMainActionButton() {
+    const button = document.getElementById('main-action-btn');
+    if (!button) return;
+    
+    button.className = 'main-action-button';
+    
+    if (crashGame.gameState === 'WAITING') {
+        if (crashGame.userBet) {
+            button.textContent = 'Отменить ставку';
+            button.classList.add('cancel');
+        } else {
+            button.textContent = 'Сделать ставку';
+        }
+    } else if (crashGame.gameState === 'IN_PROGRESS') {
+        if (crashGame.userBet && !crashGame.hasCashedOut) {
+            const potentialWin = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
+            button.textContent = `Вывести ${potentialWin}`;
+            button.classList.add('cashout');
+        } else {
+            button.textContent = 'Прием ставок завершен';
+            button.classList.add('disabled');
+        }
+    } else {
+        button.textContent = 'Прием ставок завершен';
+        button.classList.add('disabled');
+    }
+}
+
+// Сброс графика
+function resetChart() {
+    if (crashGame.chart) {
+        crashGame.chart.data.labels = [];
+        crashGame.chart.data.datasets[0].data = [];
+        crashGame.chart.update();
+    }
+}
+
+// Обновление графика
+function updateChart(multiplier) {
+    if (!crashGame.chart) return;
+    
+    const elapsed = Date.now() - crashGame.roundStartTime;
+    const timeLabel = (elapsed / 1000).toFixed(1) + 's';
+    
+    crashGame.chart.data.labels.push(timeLabel);
+    crashGame.chart.data.datasets[0].data.push(multiplier);
+    
+    // Ограничиваем количество точек на графике
+    if (crashGame.chart.data.labels.length > 50) {
+        crashGame.chart.data.labels.shift();
+        crashGame.chart.data.datasets[0].data.shift();
+    }
+    
+    // Автоматически масштабируем ось Y
+    const maxValue = Math.max(...crashGame.chart.data.datasets[0].data) * 1.1;
+    crashGame.chart.options.scales.y.max = Math.max(10, maxValue);
+    
+    crashGame.chart.update('none');
+}
+
+// Показ уведомления
+function showCrashNotification(message, type) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `crash-notification ${type}`;
+    notification.textContent = message;
+    
+    // Стили для уведомления
+    Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: type === 'success' ? 'linear-gradient(135deg, #00ff00, #00cc00)' : 'linear-gradient(135deg, #ff4444, #cc0000)',
+        color: 'white',
+        padding: '15px 25px',
+        borderRadius: '12px',
+        fontFamily: 'Orbitron, Exo 2, sans-serif',
+        fontWeight: '700',
+        fontSize: '1.1rem',
+        zIndex: '10000',
+        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)',
+        animation: 'slideDown 0.3s ease-out'
+    });
+    
+    document.body.appendChild(notification);
+    
+    // Удаляем через 3 секунды
+    setTimeout(() => {
+        notification.style.animation = 'slideUp 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Инициализация обработчиков событий для игры Краш
+function initCrashEventHandlers() {
+    // Кнопка "Назад" из игры Краш
+    const backFromCrashBtn = document.getElementById('back-from-crash');
+    if (backFromCrashBtn) {
+        backFromCrashBtn.onclick = function() {
+            showScreen('game-screen');
+        };
+    }
+    
+    // Кнопка перехода к игре Краш
+    const goToCrashBtn = document.getElementById('go-to-crash');
+    if (goToCrashBtn) {
+        goToCrashBtn.onclick = function() {
+            showScreen('crash-screen');
+            updateCrashBalance();
+        };
+    }
+    
+    // Поле ввода ставки
+    const betInput = document.getElementById('bet-amount');
+    if (betInput) {
+        betInput.addEventListener('input', function() {
+            const value = parseInt(this.value) || 0;
+            if (value > gameState.stars) {
+                this.value = gameState.stars;
+            }
+            if (value < 1) {
+                this.value = 1;
+            }
+            crashGame.betAmount = parseInt(this.value) || 1;
+        });
+    }
+    
+    // Кнопки модификаторов ставки
+    const betHalfBtn = document.getElementById('bet-half');
+    if (betHalfBtn) {
+        betHalfBtn.onclick = function() {
+            const newAmount = Math.max(1, Math.floor(crashGame.betAmount / 2));
+            crashGame.betAmount = newAmount;
+            betInput.value = newAmount;
+        };
+    }
+    
+    const betDoubleBtn = document.getElementById('bet-double');
+    if (betDoubleBtn) {
+        betDoubleBtn.onclick = function() {
+            const newAmount = Math.min(gameState.stars, crashGame.betAmount * 2);
+            crashGame.betAmount = newAmount;
+            betInput.value = newAmount;
+        };
+    }
+    
+    // Кнопки быстрых ставок
+    const quickBetButtons = document.querySelectorAll('.quick-bet');
+    quickBetButtons.forEach(button => {
+        button.onclick = function() {
+            const amount = parseInt(this.dataset.amount);
+            if (amount <= gameState.stars) {
+                crashGame.betAmount = amount;
+                betInput.value = amount;
+                
+                // Обновляем активную кнопку
+                quickBetButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            }
+        };
+    });
+    
+    // Главная кнопка действия
+    const mainActionBtn = document.getElementById('main-action-btn');
+    if (mainActionBtn) {
+        mainActionBtn.onclick = function() {
+            if (crashGame.gameState === 'WAITING') {
+                if (crashGame.userBet) {
+                    // Отменить ставку
+                    crashGame.userBet = null;
+                    updateMainActionButton();
+                } else {
+                    // Сделать ставку
+                    if (crashGame.betAmount <= gameState.stars && crashGame.betAmount > 0) {
+                        crashGame.userBet = crashGame.betAmount;
+                        updateMainActionButton();
+                    }
+                }
+            } else if (crashGame.gameState === 'IN_PROGRESS') {
+                if (crashGame.userBet && !crashGame.hasCashedOut) {
+                    // Вывести выигрыш
+                    crashGame.hasCashedOut = true;
+                    const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
+                    gameState.stars += winnings;
+                    updateCrashBalance();
+                    showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+                    updateMainActionButton();
+                }
+            }
+        };
+    }
+}
+
+// Добавляем CSS анимации для уведомлений
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from {
+            transform: translateX(-50%) translateY(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(-50%) translateY(-100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+

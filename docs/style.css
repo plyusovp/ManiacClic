@@ -1006,6 +1006,320 @@ body {
     line-height: 1.2;
 }
 
+/* --- ЭКРАН ИГРЫ КРАШ --- */
+.crash-container {
+    justify-content: flex-start;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+/* Заголовок игры Краш */
+.crash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.crash-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    margin: 0;
+}
+
+.crash-balance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* Основной игровой блок */
+.crash-game-area {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(138, 43, 226, 0.1));
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+}
+
+.game-status {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--neon-cyan);
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.multiplier-display {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 30px var(--neon-cyan);
+    margin-bottom: 20px;
+    line-height: 1;
+    animation: multiplierPulse 2s ease-in-out infinite;
+}
+
+@keyframes multiplierPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.chart-container {
+    width: 100%;
+    height: 200px;
+    margin-top: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+/* Панель управления ставками */
+.betting-panel {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(138, 43, 226, 0.1));
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.bet-input-section {
+    margin-bottom: 20px;
+}
+
+.bet-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.bet-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    color: var(--text-primary);
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.bet-input:focus {
+    outline: none;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.bet-modifiers {
+    display: flex;
+    gap: 8px;
+}
+
+.bet-modifier {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+    border: none;
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+}
+
+.bet-modifier:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+}
+
+.bet-modifier:active {
+    transform: translateY(0);
+}
+
+.quick-bet-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.quick-bet {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 12px 8px;
+    color: var(--text-primary);
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.quick-bet:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.quick-bet.active {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.main-action-button {
+    width: 100%;
+    background: linear-gradient(135deg, #00ff00, #00cc00);
+    border: none;
+    border-radius: 16px;
+    padding: 18px 24px;
+    color: var(--text-primary);
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(0, 255, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.main-action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 255, 0, 0.4);
+}
+
+.main-action-button:active {
+    transform: translateY(0);
+}
+
+.main-action-button.cancel {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    box-shadow: 0 8px 25px rgba(255, 68, 68, 0.3);
+}
+
+.main-action-button.cashout {
+    background: linear-gradient(135deg, #ffaa00, #ff6600);
+    box-shadow: 0 8px 25px rgba(255, 170, 0, 0.3);
+    animation: cashoutPulse 1s ease-in-out infinite;
+}
+
+.main-action-button.disabled {
+    background: var(--disabled-color);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+@keyframes cashoutPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* История раундов */
+.history-section {
+    margin-top: 20px;
+}
+
+.history-title {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.history-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.history-list::-webkit-scrollbar {
+    display: none;
+}
+
+.history-item {
+    min-width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 0 10px currentColor;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.history-item.low {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+}
+
+.history-item.medium {
+    background: linear-gradient(135deg, #ffaa00, #ff6600);
+    box-shadow: 0 4px 15px rgba(255, 170, 0, 0.3);
+}
+
+.history-item.high {
+    background: linear-gradient(135deg, #aa44ff, #6600cc);
+    box-shadow: 0 4px 15px rgba(170, 68, 255, 0.3);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .multiplier-display {
+        font-size: 3rem;
+    }
+    
+    .bet-input-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .bet-modifiers {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .quick-bet-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 .slider-group {
     width: 100%;
     margin-bottom: 20px;
