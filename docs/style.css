@@ -453,12 +453,18 @@ body {
 .navigation {
     width: 100%;
     margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.nav-spacer {
+    height: 10px;
 }
 
 .nav-button {
     width: 100%;
     padding: 15px;
-    background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));
     border: none;
     border-radius: 12px;
     color: var(--text-primary);
@@ -471,10 +477,40 @@ body {
     align-items: center;
     gap: 10px;
     transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Специальные стили для кнопки Краш */
+.crash-nav-button {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
+    margin-bottom: 5px;
+}
+
+.crash-nav-button:hover {
+    background: linear-gradient(135deg, #ff7a4a, #ffa726);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+    transform: translateY(-2px);
+}
+
+.crash-nav-button:active {
+    transform: scale(0.98);
+}
+
+/* Специальные стили для кнопки Вывод */
+.withdraw-nav-button {
+    background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));
     box-shadow: 0 0 10px var(--neon-purple);
 }
 
-.nav-button:active {
+.withdraw-nav-button:hover {
+    background: linear-gradient(90deg, #ff33ff, #aa33ff);
+    box-shadow: 0 0 15px var(--neon-purple);
+    transform: translateY(-2px);
+}
+
+.withdraw-nav-button:active {
     transform: scale(0.98);
 }
 

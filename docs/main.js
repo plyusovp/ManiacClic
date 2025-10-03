@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ОБЩИЕ ЭЛЕМЕНТЫ И СОСТОЯНИЕ ---
-    const config = {
+    window.config = {
         maxEnergy: 200,
         energyPerClick: 1,
         starPerClick: 1,
@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
         energyRegenInterval: 20000 // Теперь 1 единица раз в 20 секунд
     };
 
-    let gameState = {
+    window.gameState = {
         balance: 0,
-        energy: config.maxEnergy,
+        energy: window.config.maxEnergy,
         lastUpdate: Date.now(),
         withdrawalsToday: {
             count: 0,
@@ -62,7 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loadingScreen) loadingScreen.classList.add('hidden');
         if (gameScreen) gameScreen.classList.add('hidden');
         if (withdrawScreen) withdrawScreen.classList.add('hidden');
-        if (screen) screen.classList.remove('hidden');
+        
+        // Добавляем поддержку экрана Краш
+        const crashScreen = document.getElementById('crash-screen');
+        if (crashScreen) crashScreen.classList.add('hidden');
+        
+        if (typeof screen === 'string') {
+            const screenElement = document.getElementById(screen);
+            if (screenElement) screenElement.classList.remove('hidden');
+        } else if (screen) {
+            screen.classList.remove('hidden');
+        }
     }
 
     function hideLoadingScreen() {
@@ -115,9 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- СОХРАНЕНИЕ / ЗАГРУЗКА ---
-    function saveState() {
+    window.saveState = function() {
         localStorage.setItem('maniacClicState', JSON.stringify(gameState));
-    }
+    };
 
     function loadState() {
         const savedState = localStorage.getItem('maniacClicState');
@@ -134,11 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const now = Date.now();
             const elapsedSeconds = Math.floor((now - gameState.lastUpdate) / 1000);
-            const intervalsPassed = Math.floor(elapsedSeconds / (config.energyRegenInterval / 1000));
+            const intervalsPassed = Math.floor(elapsedSeconds / (window.config.energyRegenInterval / 1000));
 
             if (intervalsPassed > 0) {
-                const energyToRegen = intervalsPassed * config.energyRegenRate;
-                gameState.energy = Math.min(config.maxEnergy, gameState.energy + energyToRegen);
+                const energyToRegen = intervalsPassed * window.config.energyRegenRate;
+                gameState.energy = Math.min(window.config.maxEnergy, gameState.energy + energyToRegen);
             }
         }
         gameState.lastUpdate = Date.now();
@@ -146,33 +156,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- ОБНОВЛЕНИЕ UI И АНИМАЦИИ ---
-    function updateBalanceUI() {
+    window.updateBalanceUI = function() {
+        const balanceCounter = document.getElementById('balance-counter');
         if (balanceCounter) {
             balanceCounter.innerText = Math.floor(gameState.balance).toLocaleString('ru-RU');
         }
-    }
+    };
     
     function updateEnergyUI() {
-        const percentage = (gameState.energy / config.maxEnergy) * 100;
+        const percentage = (gameState.energy / window.config.maxEnergy) * 100;
+        const energyBar = document.getElementById('energy-bar');
+        const energyCounter = document.getElementById('energy-counter');
         if (energyBar) {
             energyBar.style.width = `${percentage}%`;
         }
         if (energyCounter) {
-            energyCounter.innerText = `${Math.floor(gameState.energy)}/${config.maxEnergy}`;
+            energyCounter.innerText = `${Math.floor(gameState.energy)}/${window.config.maxEnergy}`;
         }
     }
 
     function checkEnergy() {
         const starContainer = document.getElementById('star-container');
         if (starContainer) {
-            starContainer.classList.toggle('disabled', gameState.energy < config.energyPerClick);
+            starContainer.classList.toggle('disabled', gameState.energy < window.config.energyPerClick);
         }
     }
 
     function playClickAnimations(x, y) {
         const textAnim = document.createElement('div');
         textAnim.className = 'click-animation-text';
-        textAnim.innerText = `+${config.starPerClick}`;
+        textAnim.innerText = `+${window.config.starPerClick}`;
         document.body.appendChild(textAnim);
         textAnim.style.left = `${x - 15}px`;
         textAnim.style.top = `${y - 30}px`;
@@ -212,14 +225,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function startEnergyRegen() {
         stopEnergyRegen();
         energyRegenIntervalId = setInterval(() => {
-            if (gameState.energy < config.maxEnergy) {
-                gameState.energy = Math.min(config.maxEnergy, gameState.energy + config.energyRegenRate);
+            if (gameState.energy < window.config.maxEnergy) {
+                gameState.energy = Math.min(window.config.maxEnergy, gameState.energy + window.config.energyRegenRate);
                 gameState.lastUpdate = Date.now();
                 updateEnergyUI();
                 checkEnergy();
                 saveState();
             }
-        }, config.energyRegenInterval);
+        }, window.config.energyRegenInterval);
     }
 
     function stopEnergyRegen() {
@@ -363,8 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onStarClick(event) {
-        if (!starMesh || gameState.energy < config.energyPerClick) {
-            if (gameState.energy < config.energyPerClick) showNotification();
+        if (!starMesh || gameState.energy < window.config.energyPerClick) {
+            if (gameState.energy < window.config.energyPerClick) showNotification();
             return;
         }
         
@@ -382,8 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const intersects = raycaster.intersectObject(starMesh, true);
 
         if (intersects.length > 0) {
-            gameState.energy -= config.energyPerClick;
-            gameState.balance += config.starPerClick;
+            gameState.energy -= window.config.energyPerClick;
+            gameState.balance += window.config.starPerClick;
 
             updateBalanceUI();
             updateEnergyUI();
@@ -730,8 +743,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Инициализируем игру (это запустит загрузку 3D модели)
     initGamePage();
     
+    // Инициализируем обработчики событий для игры Краш
+    initCrashEventHandlers();
+    
     // Игровой экран будет показан после скрытия загрузочного экрана
 });
+
+// Делаем функцию showScreen глобальной для использования в игре Краш
+window.showScreen = function(screen) {
+    const loadingScreen = document.getElementById('loading-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const withdrawScreen = document.getElementById('withdraw-screen');
+    
+    if (loadingScreen) loadingScreen.classList.add('hidden');
+    if (gameScreen) gameScreen.classList.add('hidden');
+    if (withdrawScreen) withdrawScreen.classList.add('hidden');
+    
+    // Добавляем поддержку экрана Краш
+    const crashScreen = document.getElementById('crash-screen');
+    if (crashScreen) crashScreen.classList.add('hidden');
+    
+    if (typeof screen === 'string') {
+        const screenElement = document.getElementById(screen);
+        if (screenElement) screenElement.classList.remove('hidden');
+    } else if (screen) {
+        screen.classList.remove('hidden');
+    }
+};
 
 // ==================== ИГРА КРАШ ====================
 
@@ -753,7 +791,7 @@ let crashGame = {
 };
 
 // Инициализация игры Краш
-function initCrashGame() {
+window.initCrashGame = function() {
     console.log('Инициализация игры Краш...');
     
     // Инициализируем график
@@ -767,7 +805,7 @@ function initCrashGame() {
     
     // Запускаем игровой цикл
     startCrashGameLoop();
-}
+};
 
 // Инициализация графика
 function initCrashChart() {
@@ -830,12 +868,12 @@ function initCrashChart() {
 }
 
 // Обновление баланса в игре Краш
-function updateCrashBalance() {
+window.updateCrashBalance = function() {
     const balanceElement = document.getElementById('crash-balance');
     if (balanceElement) {
-        balanceElement.textContent = gameState.stars.toLocaleString();
+        balanceElement.textContent = Math.floor(gameState.balance).toLocaleString('ru-RU');
     }
-}
+};
 
 // Генерация начальной истории
 function generateInitialHistory() {
@@ -910,12 +948,12 @@ function startCrashGameLoop() {
     updateMainActionButton();
     resetChart();
     
-    // Ожидание 5 секунд
+    // Сокращаем время ожидания до 3 секунд для более быстрой игры
     setTimeout(() => {
         if (crashGame.gameState === 'WAITING') {
             startRound();
         }
-    }, 5000);
+    }, 3000);
 }
 
 // Начало раунда
@@ -974,10 +1012,10 @@ function crash() {
     }
     updateHistoryDisplay();
     
-    // Пауза перед следующим раундом
+    // Сокращаем паузу до 1 секунды для непрерывной игры
     setTimeout(() => {
         startCrashGameLoop();
-    }, 3000);
+    }, 1000);
 }
 
 // Обработка результатов раунда
@@ -987,15 +1025,19 @@ function processRoundResults() {
     if (crashGame.hasCashedOut) {
         // Пользователь успел вывести
         const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
-        gameState.stars += winnings;
+        gameState.balance += winnings;
         updateCrashBalance();
+        updateBalanceUI();
+        saveState();
         
         // Показываем уведомление о выигрыше
         showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
     } else {
         // Пользователь проиграл
-        gameState.stars -= crashGame.userBet;
+        gameState.balance -= crashGame.userBet;
         updateCrashBalance();
+        updateBalanceUI();
+        saveState();
         
         // Показываем уведомление о проигрыше
         showCrashNotification(`Проигрыш: ${crashGame.userBet} ⭐`, 'error');
@@ -1133,6 +1175,10 @@ function initCrashEventHandlers() {
         goToCrashBtn.onclick = function() {
             showScreen('crash-screen');
             updateCrashBalance();
+            // Инициализируем игру Краш, если она еще не была инициализирована
+            if (!crashGame.isActive) {
+                initCrashGame();
+            }
         };
     }
     
@@ -1141,8 +1187,8 @@ function initCrashEventHandlers() {
     if (betInput) {
         betInput.addEventListener('input', function() {
             const value = parseInt(this.value) || 0;
-            if (value > gameState.stars) {
-                this.value = gameState.stars;
+            if (value > gameState.balance) {
+                this.value = Math.floor(gameState.balance);
             }
             if (value < 1) {
                 this.value = 1;
@@ -1164,7 +1210,7 @@ function initCrashEventHandlers() {
     const betDoubleBtn = document.getElementById('bet-double');
     if (betDoubleBtn) {
         betDoubleBtn.onclick = function() {
-            const newAmount = Math.min(gameState.stars, crashGame.betAmount * 2);
+            const newAmount = Math.min(Math.floor(gameState.balance), crashGame.betAmount * 2);
             crashGame.betAmount = newAmount;
             betInput.value = newAmount;
         };
@@ -1175,7 +1221,7 @@ function initCrashEventHandlers() {
     quickBetButtons.forEach(button => {
         button.onclick = function() {
             const amount = parseInt(this.dataset.amount);
-            if (amount <= gameState.stars) {
+            if (amount <= Math.floor(gameState.balance)) {
                 crashGame.betAmount = amount;
                 betInput.value = amount;
                 
@@ -1197,7 +1243,7 @@ function initCrashEventHandlers() {
                     updateMainActionButton();
                 } else {
                     // Сделать ставку
-                    if (crashGame.betAmount <= gameState.stars && crashGame.betAmount > 0) {
+                    if (crashGame.betAmount <= Math.floor(gameState.balance) && crashGame.betAmount > 0) {
                         crashGame.userBet = crashGame.betAmount;
                         updateMainActionButton();
                     }
@@ -1207,8 +1253,10 @@ function initCrashEventHandlers() {
                     // Вывести выигрыш
                     crashGame.hasCashedOut = true;
                     const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
-                    gameState.stars += winnings;
+                    gameState.balance += winnings;
                     updateCrashBalance();
+                    updateBalanceUI();
+                    saveState();
                     showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
                     updateMainActionButton();
                 }
