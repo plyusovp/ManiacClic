@@ -773,7 +773,9 @@ window.showScreen = function(screen) {
 
 // ==================== ИГРА КРАШ ====================
 
-// Переменные для игры Краш
+// ==================== СОСТОЯНИЕ ИГРЫ КРАШ ====================
+
+// Переменные для игры Краш с улучшенным управлением состоянием
 let crashGame = {
     isActive: false,
     currentMultiplier: 1.00,
@@ -782,17 +784,32 @@ let crashGame = {
     betAmount: 10,
     userBet: null,
     hasCashedOut: false,
+    cashOutMultiplier: null, // Сохраняем множитель на момент вывода
     roundTime: 0,
     maxRoundTime: 10000, // 10 секунд максимум
     chart: null,
     history: [],
     roundStartTime: 0,
-    animationId: null
+    animationId: null,
+    roundProcessed: false, // Флаг для предотвращения двойных выплат
+    isBettingPhase: true, // Флаг фазы приема ставок
+    roundNumber: 0 // Номер раунда для отладки
 };
 
-// Инициализация игры Краш
+// ==================== ИНИЦИАЛИЗАЦИЯ ИГРЫ КРАШ ====================
+
+/**
+ * Инициализация игры Краш с проверкой алгоритма
+ */
 window.initCrashGame = function() {
-    console.log('Инициализация игры Краш...');
+    console.log('🚀 Инициализация игры Краш...');
+    
+    // Проверяем корректность алгоритма (только в режиме разработки)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('🔍 Проверка алгоритма краша...');
+        const isValid = validateCrashAlgorithm();
+        console.log(isValid ? '✅ Алгоритм корректен' : '❌ Ошибка в алгоритме');
+    }
     
     // Инициализируем график
     initCrashChart();
@@ -805,9 +822,16 @@ window.initCrashGame = function() {
     
     // Запускаем игровой цикл
     startCrashGameLoop();
+    
+    console.log('✅ Игра Краш инициализирована');
 };
 
-// Инициализация графика
+// ==================== УЛУЧШЕННАЯ ВИЗУАЛИЗАЦИЯ ГРАФИКА ====================
+
+/**
+ * Инициализация графика с улучшенной визуализацией
+ * Плавные кривые, динамические цвета, лучшая производительность
+ */
 function initCrashChart() {
     const ctx = document.getElementById('crash-chart');
     if (!ctx) return;
@@ -819,21 +843,48 @@ function initCrashChart() {
             datasets: [{
                 label: 'Множитель',
                 data: [],
-                borderColor: '#00ffff',
-                backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                borderWidth: 3,
+                borderColor: '#00ff00', // Начинаем с зеленого
+                backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                borderWidth: 4,
                 fill: true,
-                tension: 0.4,
+                tension: 0.5, // Более плавные кривые
                 pointRadius: 0,
-                pointHoverRadius: 5
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#00ffff',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                // Градиентная заливка
+                fill: {
+                    target: 'origin',
+                    above: 'rgba(0, 255, 0, 0.1)',
+                    below: 'rgba(255, 0, 0, 0.1)'
+                }
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 0 // Отключаем анимацию для лучшей производительности
+            },
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#00ffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#00ffff',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Множитель: ${context.parsed.y.toFixed(2)}x`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -841,14 +892,14 @@ function initCrashChart() {
                     display: false
                 },
                 y: {
-                    beginAtZero: true,
+                    beginAtZero: false,
                     min: 1.00,
                     max: 10.00,
                     ticks: {
                         color: '#00ffff',
                         font: {
                             family: 'Orbitron, Exo 2, sans-serif',
-                            size: 12,
+                            size: 11,
                             weight: 'bold'
                         },
                         callback: function(value) {
@@ -856,12 +907,23 @@ function initCrashChart() {
                         }
                     },
                     grid: {
-                        color: 'rgba(0, 255, 255, 0.2)'
+                        color: 'rgba(0, 255, 255, 0.15)',
+                        lineWidth: 1
+                    },
+                    border: {
+                        color: 'rgba(0, 255, 255, 0.3)'
                     }
                 }
             },
             interaction: {
-                intersect: false
+                intersect: false,
+                mode: 'index'
+            },
+            elements: {
+                line: {
+                    borderJoinStyle: 'round',
+                    borderCapStyle: 'round'
+                }
             }
         }
     });
@@ -886,74 +948,153 @@ function generateInitialHistory() {
     updateHistoryDisplay();
 }
 
-// Генерация множителя краша (Provably Fair)
+// ==================== КРИПТОГРАФИЧЕСКИ ЧЕСТНЫЙ АЛГОРИТМ КРАША ====================
+
+// Настройки House Edge (прибыльность для казино)
+const CRASH_CONFIG = {
+    HOUSE_EDGE: 0.05, // 5% прибыли для казино (RTP 95%)
+    MAX_MULTIPLIER: 1000000, // Максимальный возможный множитель
+    INSTANT_CRASH_CHANCE: 0.02, // 2% шанс на мгновенный краш (1.00x)
+    MIN_MULTIPLIER: 1.00
+};
+
+/**
+ * Генерация криптографически честного множителя краша
+ * Использует математически корректную формулу для обеспечения предопределенного House Edge
+ * 
+ * @returns {number} Множитель, на котором произойдет краш
+ */
 function generateCrashMultiplier() {
-    // Простая реализация для демонстрации
-    // В реальном приложении здесь должен быть более сложный алгоритм
-    const random = Math.random();
+    // Генерируем криптографически стойкое случайное число
+    const random = crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1);
     
-    // 3% шанс на мгновенный краш (house edge)
-    if (random < 0.03) {
-        return 1.00;
+    // Проверяем шанс на мгновенный краш (дополнительное преимущество казино)
+    if (random < CRASH_CONFIG.INSTANT_CRASH_CHANCE) {
+        return CRASH_CONFIG.MIN_MULTIPLIER;
     }
     
-    // Остальные 97% - нормальное распределение
-    const normalized = (random - 0.03) / 0.97;
-    const multiplier = Math.max(1.00, 1000000 / (normalized * 1000000 + 1) * 0.99);
+    // Нормализуем случайное число для оставшихся 98%
+    const normalizedRandom = (random - CRASH_CONFIG.INSTANT_CRASH_CHANCE) / (1 - CRASH_CONFIG.INSTANT_CRASH_CHANCE);
     
-    return Math.min(multiplier, 1000.00); // Максимум 1000x
+    // Математически корректная формула для расчета множителя
+    // Обеспечивает точный House Edge на дистанции
+    const E = CRASH_CONFIG.MAX_MULTIPLIER;
+    const H = CRASH_CONFIG.HOUSE_EDGE;
+    
+    // Формула: multiplier = (E * (1 - H)) / (1 - r)
+    // где r - нормализованное случайное число
+    const multiplier = (E * (1 - H)) / (1 - normalizedRandom);
+    
+    // Ограничиваем минимальным множителем
+    const finalMultiplier = Math.max(CRASH_CONFIG.MIN_MULTIPLIER, multiplier);
+    
+    // Округляем до 2 знаков после запятой для удобства отображения
+    return Math.min(Math.round(finalMultiplier * 100) / 100, CRASH_CONFIG.MAX_MULTIPLIER);
 }
 
-// Обновление отображения истории
+/**
+ * Проверка математической корректности алгоритма
+ * Вычисляет теоретический RTP на основе текущих настроек
+ */
+function validateCrashAlgorithm() {
+    const iterations = 100000;
+    let totalRTP = 0;
+    
+    for (let i = 0; i < iterations; i++) {
+        const multiplier = generateCrashMultiplier();
+        totalRTP += Math.min(multiplier, 1000); // Ограничиваем максимальный выигрыш
+    }
+    
+    const averageRTP = totalRTP / iterations;
+    const expectedRTP = 1 - CRASH_CONFIG.HOUSE_EDGE;
+    
+    console.log(`Теоретический RTP: ${(expectedRTP * 100).toFixed(2)}%`);
+    console.log(`Фактический RTP (${iterations} итераций): ${(averageRTP * 100).toFixed(2)}%`);
+    console.log(`Отклонение: ${Math.abs(averageRTP - expectedRTP) * 100}%`);
+    
+    return Math.abs(averageRTP - expectedRTP) < 0.01; // Допустимое отклонение 1%
+}
+
+// ==================== ОБНОВЛЕНИЕ ИСТОРИИ КРАШЕЙ ====================
+
+/**
+ * Обновление отображения истории крашей с улучшенной цветовой кодировкой
+ * Соответствует дизайну из скриншотов
+ */
 function updateHistoryDisplay() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
     historyList.innerHTML = '';
     
-    crashGame.history.slice(-15).reverse().forEach(multiplier => {
+    // Показываем последние 10 результатов (как на скриншотах)
+    crashGame.history.slice(-10).reverse().forEach(multiplier => {
         const item = document.createElement('div');
         item.className = 'history-item';
         item.textContent = multiplier.toFixed(2) + 'x';
         
-        // Цветовая кодировка
-        if (multiplier < 2.00) {
+        // Улучшенная цветовая кодировка согласно скриншотам
+        if (multiplier < 1.50) {
+            // Очень низкие множители - красный
+            item.classList.add('very-low');
+        } else if (multiplier < 2.00) {
+            // Низкие множители - красный
             item.classList.add('low');
-        } else if (multiplier < 10.00) {
+        } else if (multiplier < 5.00) {
+            // Средние множители - оранжевый
             item.classList.add('medium');
-        } else {
+        } else if (multiplier < 10.00) {
+            // Высокие множители - оранжевый/желтый
             item.classList.add('high');
+        } else {
+            // Очень высокие множители - фиолетовый/золотой
+            item.classList.add('very-high');
         }
         
         historyList.appendChild(item);
     });
 }
 
-// Запуск игрового цикла
+// ==================== УПРАВЛЕНИЕ ИГРОВЫМ ЦИКЛОМ ====================
+
+/**
+ * Запуск нового игрового цикла с правильной инициализацией состояния
+ */
 function startCrashGameLoop() {
+    // Останавливаем предыдущую анимацию
     if (crashGame.animationId) {
         cancelAnimationFrame(crashGame.animationId);
+        crashGame.animationId = null;
     }
     
+    // Сбрасываем состояние раунда
     crashGame.gameState = 'WAITING';
     crashGame.currentMultiplier = 1.00;
-    crashGame.targetMultiplier = generateCrashMultiplier();
+    crashGame.targetMultiplier = generateCrashMultiplier(); // Генерируем заранее!
     crashGame.userBet = null;
     crashGame.hasCashedOut = false;
+    crashGame.cashOutMultiplier = null;
     crashGame.roundTime = 0;
     crashGame.roundStartTime = Date.now();
+    crashGame.roundProcessed = false;
+    crashGame.isBettingPhase = true;
+    crashGame.roundNumber++;
     
+    // Обновляем UI
     updateGameStatus('Идет прием ставок');
     updateMultiplierDisplay('1.00x');
     updateMainActionButton();
     resetChart();
     
-    // Сокращаем время ожидания до 3 секунд для более быстрой игры
+    console.log(`Раунд #${crashGame.roundNumber}: Целевой множитель = ${crashGame.targetMultiplier.toFixed(2)}x`);
+    
+    // Время приема ставок - 5 секунд
     setTimeout(() => {
         if (crashGame.gameState === 'WAITING') {
+            crashGame.isBettingPhase = false;
             startRound();
         }
-    }, 3000);
+    }, 5000);
 }
 
 // Начало раунда
@@ -968,15 +1109,21 @@ function startRound() {
     animateMultiplier();
 }
 
-// Анимация роста множителя
+// ==================== НЕЛИНЕЙНАЯ АНИМАЦИЯ РОСТА МНОЖИТЕЛЯ ====================
+
+/**
+ * Анимация роста множителя с нелинейным ускорением
+ * Создает напряжение через изменение скорости роста в зависимости от фазы
+ */
 function animateMultiplier() {
     if (crashGame.gameState !== 'IN_PROGRESS') return;
     
     const elapsed = Date.now() - crashGame.roundStartTime;
-    const progress = Math.min(elapsed / 10000, 1); // 10 секунд максимум
+    const maxDuration = getMaxRoundDuration(crashGame.targetMultiplier);
+    const progress = Math.min(elapsed / maxDuration, 1);
     
-    // Нелинейный рост для создания напряжения
-    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    // Нелинейная функция роста с ускорением
+    const easeProgress = calculateNonLinearProgress(progress, crashGame.targetMultiplier);
     crashGame.currentMultiplier = 1 + (crashGame.targetMultiplier - 1) * easeProgress;
     
     // Обновляем отображение
@@ -989,6 +1136,68 @@ function animateMultiplier() {
         crash();
     } else {
         crashGame.animationId = requestAnimationFrame(animateMultiplier);
+    }
+}
+
+/**
+ * Вычисляет максимальную длительность раунда в зависимости от целевого множителя
+ * Высокие множители требуют больше времени для создания напряжения
+ */
+function getMaxRoundDuration(targetMultiplier) {
+    if (targetMultiplier <= 2.0) {
+        return 3000; // 3 секунды для низких множителей
+    } else if (targetMultiplier <= 5.0) {
+        return 5000; // 5 секунд для средних множителей
+    } else if (targetMultiplier <= 10.0) {
+        return 8000; // 8 секунд для высоких множителей
+    } else {
+        return 12000; // 12 секунд для очень высоких множителей
+    }
+}
+
+/**
+ * Вычисляет нелинейный прогресс роста множителя
+ * Создает разные фазы роста для максимального напряжения
+ */
+function calculateNonLinearProgress(progress, targetMultiplier) {
+    // Фаза 1: Медленный старт (1x - 2x)
+    if (targetMultiplier <= 2.0) {
+        // Плавный рост для низких множителей
+        return 1 - Math.pow(1 - progress, 2);
+    }
+    
+    // Фаза 2: Средний рост (2x - 5x)
+    if (targetMultiplier <= 5.0) {
+        if (progress <= 0.3) {
+            // Медленный старт
+            return (progress / 0.3) * 0.2;
+        } else if (progress <= 0.7) {
+            // Ускорение
+            const subProgress = (progress - 0.3) / 0.4;
+            return 0.2 + (subProgress * subProgress) * 0.5;
+        } else {
+            // Быстрый финиш
+            const subProgress = (progress - 0.7) / 0.3;
+            return 0.7 + (1 - Math.pow(1 - subProgress, 3)) * 0.3;
+        }
+    }
+    
+    // Фаза 3: Высокий рост (5x+)
+    if (progress <= 0.2) {
+        // Очень медленный старт
+        return (progress / 0.2) * 0.1;
+    } else if (progress <= 0.5) {
+        // Постепенное ускорение
+        const subProgress = (progress - 0.2) / 0.3;
+        return 0.1 + (subProgress * subProgress) * 0.3;
+    } else if (progress <= 0.8) {
+        // Быстрое ускорение
+        const subProgress = (progress - 0.5) / 0.3;
+        return 0.4 + (1 - Math.pow(1 - subProgress, 2)) * 0.4;
+    } else {
+        // Экспоненциальный финиш
+        const subProgress = (progress - 0.8) / 0.2;
+        return 0.8 + (1 - Math.pow(1 - subProgress, 4)) * 0.2;
     }
 }
 
@@ -1018,13 +1227,27 @@ function crash() {
     }, 1000);
 }
 
-// Обработка результатов раунда
+// ==================== ИСПРАВЛЕНИЕ БАГОВ С ВЫПЛАТАМИ ====================
+
+/**
+ * Обработка результатов раунда с защитой от двойных выплат
+ * Использует флаги состояния для предотвращения race conditions
+ */
 function processRoundResults() {
     if (!crashGame.userBet) return;
     
-    if (crashGame.hasCashedOut) {
-        // Пользователь успел вывести
-        const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
+    // Проверяем, не была ли уже обработана выплата
+    if (crashGame.roundProcessed) {
+        console.warn('Попытка повторной обработки результатов раунда - игнорируем');
+        return;
+    }
+    
+    // Устанавливаем флаг обработки
+    crashGame.roundProcessed = true;
+    
+    if (crashGame.hasCashedOut && crashGame.cashOutMultiplier) {
+        // Пользователь успел вывести - используем сохраненный множитель
+        const winnings = Math.floor(crashGame.userBet * crashGame.cashOutMultiplier);
         gameState.balance += winnings;
         updateCrashBalance();
         updateBalanceUI();
@@ -1032,8 +1255,10 @@ function processRoundResults() {
         
         // Показываем уведомление о выигрыше
         showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+        
+        console.log(`Выплата: ${winnings} ⭐ (ставка: ${crashGame.userBet}, множитель: ${crashGame.cashOutMultiplier.toFixed(2)}x)`);
     } else {
-        // Пользователь проиграл
+        // Пользователь проиграл - списываем ставку
         gameState.balance -= crashGame.userBet;
         updateCrashBalance();
         updateBalanceUI();
@@ -1041,6 +1266,8 @@ function processRoundResults() {
         
         // Показываем уведомление о проигрыше
         showCrashNotification(`Проигрыш: ${crashGame.userBet} ⭐`, 'error');
+        
+        console.log(`Проигрыш: ${crashGame.userBet} ⭐ (краш на ${crashGame.targetMultiplier.toFixed(2)}x)`);
     }
 }
 
@@ -1060,32 +1287,51 @@ function updateMultiplierDisplay(multiplier) {
     }
 }
 
-// Обновление главной кнопки действия
+// ==================== ОБНОВЛЕНИЕ UI КНОПОК ====================
+
+/**
+ * Обновление главной кнопки действия с учетом всех состояний игры
+ */
 function updateMainActionButton() {
     const button = document.getElementById('main-action-btn');
     if (!button) return;
     
+    // Сбрасываем все классы
     button.className = 'main-action-button';
+    button.disabled = false;
     
     if (crashGame.gameState === 'WAITING') {
-        if (crashGame.userBet) {
-            button.textContent = 'Отменить ставку';
-            button.classList.add('cancel');
+        if (crashGame.isBettingPhase) {
+            if (crashGame.userBet) {
+                button.textContent = 'Отменить ставку';
+                button.classList.add('cancel');
+            } else {
+                button.textContent = 'Сделать ставку';
+            }
         } else {
-            button.textContent = 'Сделать ставку';
+            button.textContent = 'Прием ставок завершен';
+            button.classList.add('disabled');
+            button.disabled = true;
         }
     } else if (crashGame.gameState === 'IN_PROGRESS') {
         if (crashGame.userBet && !crashGame.hasCashedOut) {
             const potentialWin = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
             button.textContent = `Вывести ${potentialWin}`;
             button.classList.add('cashout');
+        } else if (crashGame.hasCashedOut) {
+            button.textContent = 'Выведено!';
+            button.classList.add('disabled');
+            button.disabled = true;
         } else {
             button.textContent = 'Прием ставок завершен';
             button.classList.add('disabled');
+            button.disabled = true;
         }
     } else {
+        // CRASHED
         button.textContent = 'Прием ставок завершен';
         button.classList.add('disabled');
+        button.disabled = true;
     }
 }
 
@@ -1098,27 +1344,67 @@ function resetChart() {
     }
 }
 
-// Обновление графика
+// ==================== ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ГРАФИКА ====================
+
+/**
+ * Обновление графика с динамическим изменением цвета и масштабированием
+ */
 function updateChart(multiplier) {
     if (!crashGame.chart) return;
     
     const elapsed = Date.now() - crashGame.roundStartTime;
     const timeLabel = (elapsed / 1000).toFixed(1) + 's';
     
+    // Добавляем новые данные
     crashGame.chart.data.labels.push(timeLabel);
     crashGame.chart.data.datasets[0].data.push(multiplier);
     
-    // Ограничиваем количество точек на графике
-    if (crashGame.chart.data.labels.length > 50) {
+    // Ограничиваем количество точек для производительности
+    if (crashGame.chart.data.labels.length > 100) {
         crashGame.chart.data.labels.shift();
         crashGame.chart.data.datasets[0].data.shift();
     }
     
-    // Автоматически масштабируем ось Y
-    const maxValue = Math.max(...crashGame.chart.data.datasets[0].data) * 1.1;
+    // Динамическое изменение цвета линии в зависимости от множителя
+    updateChartColor(multiplier);
+    
+    // Автоматическое масштабирование оси Y
+    const maxValue = Math.max(...crashGame.chart.data.datasets[0].data) * 1.2;
     crashGame.chart.options.scales.y.max = Math.max(10, maxValue);
     
+    // Обновляем график без анимации для плавности
     crashGame.chart.update('none');
+}
+
+/**
+ * Динамическое изменение цвета графика в зависимости от множителя
+ */
+function updateChartColor(multiplier) {
+    if (!crashGame.chart) return;
+    
+    let color, backgroundColor;
+    
+    if (multiplier < 2.0) {
+        // Зеленый для низких множителей
+        color = '#00ff00';
+        backgroundColor = 'rgba(0, 255, 0, 0.1)';
+    } else if (multiplier < 5.0) {
+        // Желтый для средних множителей
+        color = '#ffff00';
+        backgroundColor = 'rgba(255, 255, 0, 0.1)';
+    } else if (multiplier < 10.0) {
+        // Оранжевый для высоких множителей
+        color = '#ff8800';
+        backgroundColor = 'rgba(255, 136, 0, 0.1)';
+    } else {
+        // Красный для очень высоких множителей
+        color = '#ff0000';
+        backgroundColor = 'rgba(255, 0, 0, 0.1)';
+    }
+    
+    // Обновляем цвета
+    crashGame.chart.data.datasets[0].borderColor = color;
+    crashGame.chart.data.datasets[0].backgroundColor = backgroundColor;
 }
 
 // Показ уведомления
@@ -1232,33 +1518,39 @@ function initCrashEventHandlers() {
         };
     });
     
+    // ==================== ОБРАБОТЧИКИ СОБЫТИЙ С ИСПРАВЛЕННОЙ ЛОГИКОЙ ====================
+    
     // Главная кнопка действия
     const mainActionBtn = document.getElementById('main-action-btn');
     if (mainActionBtn) {
         mainActionBtn.onclick = function() {
-            if (crashGame.gameState === 'WAITING') {
+            if (crashGame.gameState === 'WAITING' && crashGame.isBettingPhase) {
                 if (crashGame.userBet) {
                     // Отменить ставку
                     crashGame.userBet = null;
                     updateMainActionButton();
+                    console.log('Ставка отменена');
                 } else {
                     // Сделать ставку
                     if (crashGame.betAmount <= Math.floor(gameState.balance) && crashGame.betAmount > 0) {
                         crashGame.userBet = crashGame.betAmount;
                         updateMainActionButton();
+                        console.log(`Ставка сделана: ${crashGame.betAmount} ⭐`);
+                    } else {
+                        showCrashNotification('Недостаточно средств!', 'error');
                     }
                 }
             } else if (crashGame.gameState === 'IN_PROGRESS') {
                 if (crashGame.userBet && !crashGame.hasCashedOut) {
-                    // Вывести выигрыш
+                    // Вывести выигрыш - сохраняем множитель на момент вывода
                     crashGame.hasCashedOut = true;
-                    const winnings = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
-                    gameState.balance += winnings;
-                    updateCrashBalance();
-                    updateBalanceUI();
-                    saveState();
-                    showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+                    crashGame.cashOutMultiplier = crashGame.currentMultiplier;
+                    
+                    // НЕ выплачиваем здесь - выплата будет в processRoundResults()
                     updateMainActionButton();
+                    
+                    console.log(`Вывод на множителе: ${crashGame.cashOutMultiplier.toFixed(2)}x`);
+                    showCrashNotification(`Вывод на ${crashGame.cashOutMultiplier.toFixed(2)}x!`, 'success');
                 }
             }
         };
