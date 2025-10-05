@@ -1320,19 +1320,50 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Улучшенная цветовая кодировка истории крашей */
+.history-item.very-low {
+    background: linear-gradient(135deg, #ff0000, #cc0000);
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
 .history-item.low {
     background: linear-gradient(135deg, #ff4444, #cc0000);
     box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+    border: 1px solid rgba(255, 68, 68, 0.3);
 }
 
 .history-item.medium {
-    background: linear-gradient(135deg, #ffaa00, #ff6600);
-    box-shadow: 0 4px 15px rgba(255, 170, 0, 0.3);
+    background: linear-gradient(135deg, #ff8800, #ff6600);
+    box-shadow: 0 4px 15px rgba(255, 136, 0, 0.4);
+    border: 1px solid rgba(255, 136, 0, 0.3);
 }
 
 .history-item.high {
+    background: linear-gradient(135deg, #ffaa00, #ff8800);
+    box-shadow: 0 4px 15px rgba(255, 170, 0, 0.4);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.history-item.very-high {
     background: linear-gradient(135deg, #aa44ff, #6600cc);
-    box-shadow: 0 4px 15px rgba(170, 68, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(170, 68, 255, 0.4);
+    border: 1px solid rgba(170, 68, 255, 0.3);
+    position: relative;
+}
+
+.history-item.very-high::after {
+    content: '✨';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.8rem;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
 }
 
 /* Адаптивность */
