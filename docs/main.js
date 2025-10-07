@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Логика подтверждения вывода
-        withdrawConfirmBtn.onclick = async () => {
+        withdrawConfirmBtn.onclick = () => {
             if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
             const amount = selectedAmount;
             const commissionRate = getCommission(amount);
@@ -584,89 +584,77 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalDeducted <= userBalance) {
                 const botStars = amount / 200;
                 
-                // Проверяем данные Telegram перед отправкой
-                if (!validateTelegramData()) {
-                    alert('Ошибка: Не удалось получить данные пользователя Telegram. Убедитесь, что приложение запущено через бота.');
-                    return;
-                }
-                
-                // Получаем данные пользователя и initData от Telegram
+                // Получаем данные пользователя
                 const userData = getTelegramUserData();
-                const initData = window.Telegram.WebApp.initData;
                 
-                // Подготавливаем данные для отправки на сервер
-                const requestData = {
-                    amount: amount,
-                    app_transaction_id: "tx_" + Date.now(),
-                    initData: initData,
-                    user_id: userData?.id,
-                    username: userData?.username,
-                    first_name: userData?.first_name,
-                    last_name: userData?.last_name
+                // Подготавливаем данные для отправки боту
+                const withdrawData = {
+                    action: "withdraw",
+                    user_id: userData?.id || null,
+                    user_info: userData,
+                    withdraw_amount: amount,
+                    commission_amount: commission,
+                    total_deducted: totalDeducted,
+                    bot_stars_received: botStars,
+                    timestamp: Date.now(),
+                    game_version: "1.0"
                 };
                 
-                console.log('Отправляем запрос на сервер:', requestData);
+                // Отправляем данные боту
+                console.log('Попытка отправки данных боту:', withdrawData);
                 
-                try {
-                    console.log('🚀 Отправляем запрос на сервер:', {
-                        url: API_URL,
-                        data: requestData
-                    });
-                    
-                    // Отправляем POST запрос на сервер
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(requestData)
-                    });
-                    
-                    console.log('📡 Получен ответ от сервера:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        ok: response.ok
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('✅ Запрос успешно отправлен:', result);
-                        
-                        // Обновляем локальное состояние только после успешной отправки
-                        gameState.balance -= totalDeducted;
-                        gameState.withdrawalsToday.count++;
-                        saveState();
-
-                        document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
-                        successModal.classList.remove('hidden');
-
-                        setTimeout(() => {
-                            successModal.classList.add('hidden');
-                            updateBalanceUI();
-                            showScreen(gameScreen);
-                            startEnergyRegen();
-                            initThreeJSScene();
-                        }, 3000);
-                    } else {
-                        // Обработка ошибки сервера
-                        const errorText = await response.text();
-                        console.error('❌ Ошибка сервера:', {
-                            status: response.status,
-                            statusText: response.statusText,
-                            errorText: errorText
-                        });
-                        
-                        // Показываем более детальную ошибку
-                        const errorMessage = `Ошибка сервера (${response.status}): ${response.statusText}\n\nДетали: ${errorText}\n\nПроверьте:\n1. Правильность URL в api_config.js\n2. Работает ли ваш сервер\n3. Правильно ли настроен API endpoint`;
-                        alert(errorMessage);
+                // Пробуем разные способы отправки данных
+                let dataSent = false;
+                
+                // Способ 1: tg.sendData
+                if (typeof tg.sendData === 'function') {
+                    try {
+                        tg.sendData(JSON.stringify(withdrawData));
+                        console.log('✅ Данные отправлены через tg.sendData');
+                        dataSent = true;
+                    } catch (error) {
+                        console.error('❌ Ошибка tg.sendData:', error);
                     }
-                } catch (error) {
-                    // Обработка сетевых ошибок
-                    console.error('❌ Ошибка сети:', error);
-                    
-                    const errorMessage = `Ошибка сети: ${error.message}\n\nВозможные причины:\n1. Неправильный URL в api_config.js\n2. Сервер недоступен\n3. Проблемы с CORS\n4. Блокировка запроса браузером\n\nПроверьте консоль для подробностей.`;
-                    alert(errorMessage);
                 }
+                
+                // Способ 2: tg.MainButton (если первый не сработал)
+                if (!dataSent && tg.MainButton) {
+                    try {
+                        tg.MainButton.setText('Вывод выполнен!');
+                        tg.MainButton.show();
+                        tg.MainButton.onClick(() => {
+                            tg.close();
+                        });
+                        console.log('✅ Используем MainButton как fallback');
+                        dataSent = true;
+                    } catch (error) {
+                        console.error('❌ Ошибка MainButton:', error);
+                    }
+                }
+                
+                // Способ 3: alert с данными для копирования
+                if (!dataSent) {
+                    const dataString = JSON.stringify(withdrawData, null, 2);
+                    alert('WebApp API недоступен. Скопируйте данные:\n\n' + dataString);
+                    console.log('❌ Все способы отправки не сработали');
+                    return;
+                }
+
+                // Обновляем локальное состояние только после успешной отправки
+                gameState.balance -= totalDeducted;
+                gameState.withdrawalsToday.count++;
+                saveState();
+
+                document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
+                successModal.classList.remove('hidden');
+
+                setTimeout(() => {
+                    successModal.classList.add('hidden');
+                    updateBalanceUI();
+                    showScreen(gameScreen);
+                    startEnergyRegen();
+                    initThreeJSScene();
+                }, 3000);
             }
         };
 
@@ -678,39 +666,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ФУНКЦИИ ДЛЯ ИНТЕГРАЦИИ С БОТОМ ---
     function getTelegramUserData() {
         try {
-            const tg = window.Telegram.WebApp;
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                return tg.initDataUnsafe.user;
+            const userData = tg.initDataUnsafe?.user;
+            if (userData) {
+                return {
+                    id: userData.id,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    username: userData.username,
+                    language_code: userData.language_code
+                };
             }
-            return null;
         } catch (e) {
             console.error('Ошибка получения данных пользователя:', e);
-            return null;
         }
+        return null;
     }
-    
-    function validateTelegramData() {
-        const userData = getTelegramUserData();
-        const initData = window.Telegram.WebApp.initData;
-        
-        console.log('🔍 Проверка данных Telegram:', {
-            userData: userData,
-            initData: initData,
-            hasUserData: !!userData,
-            hasInitData: !!initData
-        });
-        
-        if (!userData) {
-            console.warn('⚠️ Данные пользователя Telegram недоступны');
+
+    function sendDataToBot(data) {
+        try {
+            console.log('Отправляем данные боту:', data);
+            tg.sendData(JSON.stringify(data));
+            return true;
+        } catch (e) {
+            console.error('Ошибка отправки данных в Telegram:', e);
             return false;
         }
-        
-        if (!initData) {
-            console.warn('⚠️ initData Telegram недоступен');
-            return false;
-        }
-        
-        return true;
     }
 
     // --- ОБЩИЕ ФУНКЦИИ И ЗАПУСК ---
@@ -2360,3 +2340,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Игра Краш готова к использованию
