@@ -819,16 +819,23 @@ let crashGame = {
 // ==================== ИНИЦИАЛИЗАЦИЯ ИГРЫ КРАШ ====================
 
 /**
- * Инициализация игры Краш с проверкой алгоритма
+ * Инициализация игры Краш с проверкой алгоритма и систем безопасности
  */
 window.initCrashGame = function() {
     console.log('🚀 Инициализация игры Краш...');
+    
+    // Сбрасываем конечный автомат состояний
+    crashStateMachine.reset();
     
     // Проверяем корректность алгоритма (только в режиме разработки)
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         console.log('🔍 Проверка алгоритма краша...');
         const isValid = validateCrashAlgorithm();
         console.log(isValid ? '✅ Алгоритм корректен' : '❌ Ошибка в алгоритме');
+        
+        // Показываем отчет о безопасности
+        const securityReport = crashSecurity.getSecurityReport();
+        console.log('🛡️ Отчет о безопасности:', securityReport);
     }
     
     // Инициализируем график
@@ -843,7 +850,7 @@ window.initCrashGame = function() {
     // Запускаем игровой цикл
     startCrashGameLoop();
     
-    console.log('✅ Игра Краш инициализирована');
+    console.log('✅ Игра Краш инициализирована с полной системой безопасности');
 };
 
 // ==================== УЛУЧШЕННАЯ ВИЗУАЛИЗАЦИЯ ГРАФИКА ====================
@@ -856,6 +863,18 @@ function initCrashChart() {
     const ctx = document.getElementById('crash-chart');
     if (!ctx) return;
     
+    // Создаем градиент для линии графика
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.6)');
+    gradient.addColorStop(1, 'rgba(255, 0, 0, 0.8)');
+    
+    // Создаем градиент для заливки
+    const fillGradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
+    fillGradient.addColorStop(0, 'rgba(0, 255, 0, 0.2)');
+    fillGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.1)');
+    fillGradient.addColorStop(1, 'rgba(255, 0, 0, 0.2)');
+    
     crashGame.chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -863,21 +882,24 @@ function initCrashChart() {
             datasets: [{
                 label: 'Множитель',
                 data: [],
-                borderColor: '#00ff00', // Начинаем с зеленого
-                backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                borderColor: gradient,
+                backgroundColor: fillGradient,
                 borderWidth: 4,
                 fill: true,
-                tension: 0.5, // Более плавные кривые
+                tension: 0.8, // Очень плавные кривые
                 pointRadius: 0,
                 pointHoverRadius: 8,
                 pointBackgroundColor: '#00ffff',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
-                // Градиентная заливка
-                fill: {
-                    target: 'origin',
-                    above: 'rgba(0, 255, 0, 0.1)',
-                    below: 'rgba(255, 0, 0, 0.1)'
+                segment: {
+                    borderColor: function(ctx) {
+                        const value = ctx.p1.parsed.y;
+                        if (value < 2) return '#00ff00';
+                        if (value < 5) return '#ffff00';
+                        if (value < 10) return '#ff8800';
+                        return '#ff0000';
+                    }
                 }
             }]
         },
@@ -893,14 +915,26 @@ function initCrashChart() {
                 },
                 tooltip: {
                     enabled: true,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
                     titleColor: '#00ffff',
                     bodyColor: '#ffffff',
                     borderColor: '#00ffff',
-                    borderWidth: 1,
-                    cornerRadius: 8,
+                    borderWidth: 2,
+                    cornerRadius: 12,
                     displayColors: false,
+                    titleFont: {
+                        family: 'Orbitron, Exo 2, sans-serif',
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: 'Orbitron, Exo 2, sans-serif',
+                        size: 13
+                    },
                     callbacks: {
+                        title: function(context) {
+                            return `Время: ${context[0].label}`;
+                        },
                         label: function(context) {
                             return `Множитель: ${context.parsed.y.toFixed(2)}x`;
                         }
@@ -919,19 +953,21 @@ function initCrashChart() {
                         color: '#00ffff',
                         font: {
                             family: 'Orbitron, Exo 2, sans-serif',
-                            size: 11,
+                            size: 12,
                             weight: 'bold'
                         },
                         callback: function(value) {
                             return value.toFixed(2) + 'x';
-                        }
+                        },
+                        stepSize: 1
                     },
                     grid: {
-                        color: 'rgba(0, 255, 255, 0.15)',
-                        lineWidth: 1
+                        color: 'rgba(0, 255, 255, 0.2)',
+                        lineWidth: 1,
+                        drawBorder: false
                     },
                     border: {
-                        color: 'rgba(0, 255, 255, 0.3)'
+                        display: false
                     }
                 }
             },
@@ -943,6 +979,17 @@ function initCrashChart() {
                 line: {
                     borderJoinStyle: 'round',
                     borderCapStyle: 'round'
+                },
+                point: {
+                    hoverBorderWidth: 3
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
                 }
             }
         }
@@ -978,6 +1025,449 @@ const CRASH_CONFIG = {
     MIN_MULTIPLIER: 1.00
 };
 
+// Криптографически стойкий генератор случайных чисел
+class CryptoRandom {
+    static getSecureRandom() {
+        if (window.crypto && window.crypto.getRandomValues) {
+            const array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            return array[0] / (0xFFFFFFFF + 1);
+        } else {
+            // Fallback для старых браузеров
+            console.warn('Криптографический API недоступен, используется Math.random()');
+            return Math.random();
+        }
+    }
+}
+
+// ==================== КОНЕЧНЫЙ АВТОМАТ СОСТОЯНИЙ ====================
+
+/**
+ * Конечный автомат для управления состоянием игры Краш
+ * Обеспечивает строгий контроль переходов между состояниями
+ */
+class CrashGameStateMachine {
+    constructor() {
+        this.currentState = 'WAITING';
+        this.previousState = null;
+        this.stateHistory = [];
+        this.transitions = {
+            'WAITING': ['BETTING', 'ERROR'],
+            'BETTING': ['RUNNING', 'WAITING', 'ERROR'],
+            'RUNNING': ['CRASHED', 'ERROR'],
+            'CRASHED': ['WAITING', 'ERROR'],
+            'ERROR': ['WAITING']
+        };
+    }
+    
+    /**
+     * Переход в новое состояние с проверкой валидности
+     * @param {string} newState - Новое состояние
+     * @param {object} context - Контекст перехода
+     * @returns {boolean} Успешность перехода
+     */
+    transitionTo(newState, context = {}) {
+        if (!this.isValidTransition(newState)) {
+            console.error(`Недопустимый переход из ${this.currentState} в ${newState}`);
+            return false;
+        }
+        
+        this.previousState = this.currentState;
+        this.currentState = newState;
+        this.stateHistory.push({
+            from: this.previousState,
+            to: newState,
+            timestamp: Date.now(),
+            context: context
+        });
+        
+        // Ограничиваем историю состояний
+        if (this.stateHistory.length > 100) {
+            this.stateHistory.shift();
+        }
+        
+        console.log(`🔄 Переход состояния: ${this.previousState} → ${newState}`);
+        return true;
+    }
+    
+    /**
+     * Проверка валидности перехода
+     * @param {string} newState - Новое состояние
+     * @returns {boolean} Валидность перехода
+     */
+    isValidTransition(newState) {
+        return this.transitions[this.currentState]?.includes(newState) || false;
+    }
+    
+    /**
+     * Получение текущего состояния
+     * @returns {string} Текущее состояние
+     */
+    getCurrentState() {
+        return this.currentState;
+    }
+    
+    /**
+     * Проверка, находится ли автомат в определенном состоянии
+     * @param {string} state - Состояние для проверки
+     * @returns {boolean} Результат проверки
+     */
+    isInState(state) {
+        return this.currentState === state;
+    }
+    
+    /**
+     * Сброс автомата в начальное состояние
+     */
+    reset() {
+        this.previousState = null;
+        this.currentState = 'WAITING';
+        this.stateHistory = [];
+        console.log('🔄 Конечный автомат сброшен в состояние WAITING');
+    }
+    
+    /**
+     * Получение статистики состояний
+     * @returns {object} Статистика
+     */
+    getStateStats() {
+        const stats = {};
+        this.stateHistory.forEach(entry => {
+            if (!stats[entry.to]) {
+                stats[entry.to] = 0;
+            }
+            stats[entry.to]++;
+        });
+        return stats;
+    }
+}
+
+// Глобальный экземпляр конечного автомата
+const crashStateMachine = new CrashGameStateMachine();
+
+// ==================== СИСТЕМА БЕЗОПАСНОСТИ ====================
+
+/**
+ * Система безопасности для предотвращения читерства и взлома
+ * Включает проверки целостности, валидацию данных и защиту от манипуляций
+ */
+class CrashGameSecurity {
+    constructor() {
+        this.integrityChecks = [];
+        this.suspiciousActivity = [];
+        this.maxSuspiciousEvents = 10;
+        this.securityEnabled = true;
+    }
+    
+    /**
+     * Проверка целостности игрового состояния
+     * @param {object} gameState - Состояние игры для проверки
+     * @returns {boolean} Результат проверки
+     */
+    validateGameState(gameState) {
+        if (!this.securityEnabled) return true;
+        
+        const checks = [
+            this.checkMultiplierRange(gameState.currentMultiplier),
+            this.checkMultiplierRange(gameState.targetMultiplier),
+            this.checkBetAmount(gameState.userBet),
+            this.checkBalanceIntegrity(gameState.userBet),
+            this.checkTimingIntegrity(gameState.roundStartTime)
+        ];
+        
+        const allValid = checks.every(check => check.valid);
+        
+        if (!allValid) {
+            const failedChecks = checks.filter(check => !check.valid);
+            this.logSuspiciousActivity('GAME_STATE_VALIDATION_FAILED', {
+                failedChecks: failedChecks,
+                gameState: gameState
+            });
+        }
+        
+        return allValid;
+    }
+    
+    /**
+     * Проверка диапазона множителя
+     * @param {number} multiplier - Множитель для проверки
+     * @returns {object} Результат проверки
+     */
+    checkMultiplierRange(multiplier) {
+        const valid = multiplier >= CRASH_CONFIG.MIN_MULTIPLIER && 
+                     multiplier <= CRASH_CONFIG.MAX_MULTIPLIER &&
+                     !isNaN(multiplier) && 
+                     isFinite(multiplier);
+        
+        return {
+            valid: valid,
+            check: 'MULTIPLIER_RANGE',
+            value: multiplier,
+            reason: valid ? null : 'Множитель вне допустимого диапазона'
+        };
+    }
+    
+    /**
+     * Проверка суммы ставки
+     * @param {number} betAmount - Сумма ставки
+     * @returns {object} Результат проверки
+     */
+    checkBetAmount(betAmount) {
+        if (!betAmount) return { valid: true, check: 'BET_AMOUNT' };
+        
+        const valid = betAmount > 0 && 
+                     betAmount <= gameState.balance &&
+                     Number.isInteger(betAmount) &&
+                     betAmount <= 1000000; // Максимальная ставка
+        
+        return {
+            valid: valid,
+            check: 'BET_AMOUNT',
+            value: betAmount,
+            reason: valid ? null : 'Некорректная сумма ставки'
+        };
+    }
+    
+    /**
+     * Проверка целостности баланса
+     * @param {number} betAmount - Сумма ставки
+     * @returns {object} Результат проверки
+     */
+    checkBalanceIntegrity(betAmount) {
+        if (!betAmount) return { valid: true, check: 'BALANCE_INTEGRITY' };
+        
+        const valid = gameState.balance >= betAmount &&
+                     gameState.balance >= 0 &&
+                     isFinite(gameState.balance);
+        
+        return {
+            valid: valid,
+            check: 'BALANCE_INTEGRITY',
+            value: gameState.balance,
+            reason: valid ? null : 'Нарушение целостности баланса'
+        };
+    }
+    
+    /**
+     * Проверка временной целостности
+     * @param {number} roundStartTime - Время начала раунда
+     * @returns {object} Результат проверки
+     */
+    checkTimingIntegrity(roundStartTime) {
+        const now = Date.now();
+        const valid = roundStartTime <= now &&
+                     roundStartTime > (now - 60000) && // Не старше минуты
+                     isFinite(roundStartTime);
+        
+        return {
+            valid: valid,
+            check: 'TIMING_INTEGRITY',
+            value: roundStartTime,
+            reason: valid ? null : 'Нарушение временной целостности'
+        };
+    }
+    
+    /**
+     * Проверка подозрительной активности
+     * @param {string} eventType - Тип события
+     * @param {object} data - Данные события
+     * @returns {boolean} Есть ли подозрительная активность
+     */
+    checkSuspiciousActivity(eventType, data) {
+        const suspiciousPatterns = [
+            { type: 'RAPID_BETTING', condition: this.checkRapidBetting.bind(this) },
+            { type: 'UNUSUAL_MULTIPLIERS', condition: this.checkUnusualMultipliers.bind(this) },
+            { type: 'TIMING_ANOMALIES', condition: this.checkTimingAnomalies.bind(this) },
+            { type: 'INVALID_BET_AMOUNTS', condition: this.checkInvalidBetAmounts.bind(this) },
+            { type: 'BALANCE_MANIPULATION', condition: this.checkBalanceManipulation.bind(this) },
+            { type: 'DEVICE_FINGERPRINT', condition: this.checkDeviceFingerprint.bind(this) }
+        ];
+        
+        for (const pattern of suspiciousPatterns) {
+            if (pattern.condition(data)) {
+                this.logSuspiciousActivity(pattern.type, data);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Проверка быстрых ставок
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkRapidBetting(data) {
+        // Проверяем, не делаются ли ставки слишком быстро
+        const recentBets = this.suspiciousActivity.filter(activity => 
+            activity.type === 'BET_PLACED' && 
+            Date.now() - activity.timestamp < 1000 // За последнюю секунду
+        );
+        
+        return recentBets.length > 5; // Более 5 ставок в секунду
+    }
+    
+    /**
+     * Проверка необычных множителей
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkUnusualMultipliers(data) {
+        if (!data.multiplier) return false;
+        
+        // Проверяем, не выпадают ли слишком часто высокие множители
+        const recentMultipliers = crashGame.history.slice(-10);
+        const highMultipliers = recentMultipliers.filter(m => m > 10);
+        
+        return highMultipliers.length > 7; // Более 7 из 10 высоких множителей
+    }
+    
+    /**
+     * Проверка временных аномалий
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkTimingAnomalies(data) {
+        if (!data.timestamp) return false;
+        
+        // Проверяем, не происходят ли события слишком быстро
+        const now = Date.now();
+        const timeDiff = now - data.timestamp;
+        
+        return timeDiff < 10; // Менее 10мс между событиями
+    }
+    
+    /**
+     * Проверка некорректных сумм ставок
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkInvalidBetAmounts(data) {
+        if (!data.betAmount) return false;
+        
+        const betAmount = data.betAmount;
+        const balance = gameState.balance;
+        
+        // Проверяем подозрительные суммы ставок
+        return betAmount <= 0 || 
+               betAmount > balance || 
+               betAmount > 1000000 || // Максимальная ставка
+               !Number.isInteger(betAmount) ||
+               betAmount === Infinity ||
+               betAmount === -Infinity ||
+               isNaN(betAmount);
+    }
+    
+    /**
+     * Проверка манипуляций с балансом
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkBalanceManipulation(data) {
+        const balance = gameState.balance;
+        
+        // Проверяем некорректные значения баланса
+        return balance < 0 || 
+               balance === Infinity ||
+               balance === -Infinity ||
+               isNaN(balance) ||
+               !isFinite(balance);
+    }
+    
+    /**
+     * Проверка отпечатка устройства для обнаружения ботов
+     * @param {object} data - Данные для проверки
+     * @returns {boolean} Подозрительная активность
+     */
+    checkDeviceFingerprint(data) {
+        // Проверяем наличие подозрительных признаков автоматизации
+        const userAgent = navigator.userAgent.toLowerCase();
+        const suspiciousPatterns = [
+            'headless',
+            'phantom',
+            'selenium',
+            'webdriver',
+            'automation',
+            'bot',
+            'crawler',
+            'spider'
+        ];
+        
+        const isSuspiciousUA = suspiciousPatterns.some(pattern => userAgent.includes(pattern));
+        
+        // Проверяем отсутствие мыши (признак бота)
+        const hasMouseEvents = window.onmousemove !== null;
+        
+        // Проверяем размеры экрана (могут быть поддельными у ботов)
+        const screenSize = window.screen.width * window.screen.height;
+        const suspiciousScreenSize = screenSize < 100000 || screenSize > 50000000;
+        
+        return isSuspiciousUA || !hasMouseEvents || suspiciousScreenSize;
+    }
+    
+    /**
+     * Логирование подозрительной активности
+     * @param {string} type - Тип активности
+     * @param {object} data - Данные активности
+     */
+    logSuspiciousActivity(type, data) {
+        const activity = {
+            type: type,
+            timestamp: Date.now(),
+            data: data,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+        
+        this.suspiciousActivity.push(activity);
+        
+        // Ограничиваем количество записей
+        if (this.suspiciousActivity.length > this.maxSuspiciousEvents) {
+            this.suspiciousActivity.shift();
+        }
+        
+        console.warn(`🚨 Подозрительная активность: ${type}`, activity);
+        
+        // В продакшене здесь можно отправить данные на сервер
+        if (this.suspiciousActivity.length >= this.maxSuspiciousEvents) {
+            this.handleSecurityBreach();
+        }
+    }
+    
+    /**
+     * Обработка нарушения безопасности
+     */
+    handleSecurityBreach() {
+        console.error('🚨 Обнаружено нарушение безопасности!');
+        
+        // Отключаем игру
+        this.securityEnabled = false;
+        crashStateMachine.transitionTo('ERROR');
+        
+        // Показываем сообщение пользователю
+        showCrashNotification('Обнаружена подозрительная активность. Игра приостановлена.', 'error');
+        
+        // В продакшене здесь можно отправить уведомление администратору
+    }
+    
+    /**
+     * Получение отчета о безопасности
+     * @returns {object} Отчет о безопасности
+     */
+    getSecurityReport() {
+        return {
+            securityEnabled: this.securityEnabled,
+            suspiciousActivityCount: this.suspiciousActivity.length,
+            recentActivity: this.suspiciousActivity.slice(-5),
+            integrityChecks: this.integrityChecks.length
+        };
+    }
+}
+
+// Глобальный экземпляр системы безопасности
+const crashSecurity = new CrashGameSecurity();
+
 /**
  * Генерация криптографически честного множителя краша
  * Использует математически корректную формулу для обеспечения предопределенного House Edge
@@ -986,7 +1476,7 @@ const CRASH_CONFIG = {
  */
 function generateCrashMultiplier() {
     // Генерируем криптографически стойкое случайное число
-    const random = crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1);
+    const random = CryptoRandom.getSecureRandom();
     
     // Проверяем шанс на мгновенный краш (дополнительное преимущество казино)
     if (random < CRASH_CONFIG.INSTANT_CRASH_CHANCE) {
@@ -996,14 +1486,12 @@ function generateCrashMultiplier() {
     // Нормализуем случайное число для оставшихся 98%
     const normalizedRandom = (random - CRASH_CONFIG.INSTANT_CRASH_CHANCE) / (1 - CRASH_CONFIG.INSTANT_CRASH_CHANCE);
     
-    // Математически корректная формула для расчета множителя
-    // Обеспечивает точный House Edge на дистанции
-    const E = CRASH_CONFIG.MAX_MULTIPLIER;
+    // КОРРЕКТНАЯ математическая формула для расчета множителя
+    // Формула: multiplier = (1 - H) / (1 - r)
+    // где H - House Edge, r - нормализованное случайное число
+    // Эта формула обеспечивает точный RTP = (1 - H) на дистанции
     const H = CRASH_CONFIG.HOUSE_EDGE;
-    
-    // Формула: multiplier = (E * (1 - H)) / (1 - r)
-    // где r - нормализованное случайное число
-    const multiplier = (E * (1 - H)) / (1 - normalizedRandom);
+    const multiplier = (1 - H) / (1 - normalizedRandom);
     
     // Ограничиваем минимальным множителем
     const finalMultiplier = Math.max(CRASH_CONFIG.MIN_MULTIPLIER, multiplier);
@@ -1019,20 +1507,33 @@ function generateCrashMultiplier() {
 function validateCrashAlgorithm() {
     const iterations = 100000;
     let totalRTP = 0;
+    let instantCrashes = 0;
     
     for (let i = 0; i < iterations; i++) {
         const multiplier = generateCrashMultiplier();
-        totalRTP += Math.min(multiplier, 1000); // Ограничиваем максимальный выигрыш
+        totalRTP += multiplier;
+        if (multiplier === 1.00) {
+            instantCrashes++;
+        }
     }
     
     const averageRTP = totalRTP / iterations;
     const expectedRTP = 1 - CRASH_CONFIG.HOUSE_EDGE;
+    const actualInstantCrashRate = instantCrashes / iterations;
     
+    console.log(`=== ПРОВЕРКА АЛГОРИТМА КРАША ===`);
     console.log(`Теоретический RTP: ${(expectedRTP * 100).toFixed(2)}%`);
     console.log(`Фактический RTP (${iterations} итераций): ${(averageRTP * 100).toFixed(2)}%`);
-    console.log(`Отклонение: ${Math.abs(averageRTP - expectedRTP) * 100}%`);
+    console.log(`Отклонение RTP: ${Math.abs(averageRTP - expectedRTP) * 100}%`);
+    console.log(`Теоретический шанс мгновенного краша: ${(CRASH_CONFIG.INSTANT_CRASH_CHANCE * 100).toFixed(2)}%`);
+    console.log(`Фактический шанс мгновенного краша: ${(actualInstantCrashRate * 100).toFixed(2)}%`);
+    console.log(`House Edge: ${(CRASH_CONFIG.HOUSE_EDGE * 100).toFixed(2)}%`);
+    console.log(`================================`);
     
-    return Math.abs(averageRTP - expectedRTP) < 0.01; // Допустимое отклонение 1%
+    const rtpValid = Math.abs(averageRTP - expectedRTP) < 0.01; // Допустимое отклонение 1%
+    const instantCrashValid = Math.abs(actualInstantCrashRate - CRASH_CONFIG.INSTANT_CRASH_CHANCE) < 0.005; // Допустимое отклонение 0.5%
+    
+    return rtpValid && instantCrashValid;
 }
 
 // ==================== ОБНОВЛЕНИЕ ИСТОРИИ КРАШЕЙ ====================
@@ -1048,14 +1549,18 @@ function updateHistoryDisplay() {
     historyList.innerHTML = '';
     
     // Показываем последние 10 результатов (как на скриншотах)
-    crashGame.history.slice(-10).reverse().forEach(multiplier => {
+    crashGame.history.slice(-10).reverse().forEach((multiplier, index) => {
         const item = document.createElement('div');
         item.className = 'history-item';
         item.textContent = multiplier.toFixed(2) + 'x';
         
+        // Добавляем анимацию появления
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(20px) scale(0.8)';
+        
         // Улучшенная цветовая кодировка согласно скриншотам
         if (multiplier < 1.50) {
-            // Очень низкие множители - красный
+            // Очень низкие множители - темно-красный
             item.classList.add('very-low');
         } else if (multiplier < 2.00) {
             // Низкие множители - красный
@@ -1064,14 +1569,21 @@ function updateHistoryDisplay() {
             // Средние множители - оранжевый
             item.classList.add('medium');
         } else if (multiplier < 10.00) {
-            // Высокие множители - оранжевый/желтый
+            // Высокие множители - желтый/золотой
             item.classList.add('high');
         } else {
-            // Очень высокие множители - фиолетовый/золотой
+            // Очень высокие множители - фиолетовый/золотой с эффектами
             item.classList.add('very-high');
         }
         
         historyList.appendChild(item);
+        
+        // Анимация появления с задержкой
+        setTimeout(() => {
+            item.style.transition = 'all 0.3s ease-out';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0) scale(1)';
+        }, index * 50);
     });
 }
 
@@ -1079,6 +1591,7 @@ function updateHistoryDisplay() {
 
 /**
  * Запуск нового игрового цикла с правильной инициализацией состояния
+ * Использует конечный автомат для управления состояниями
  */
 function startCrashGameLoop() {
     // Останавливаем предыдущую анимацию
@@ -1088,7 +1601,6 @@ function startCrashGameLoop() {
     }
     
     // Сбрасываем состояние раунда
-    crashGame.gameState = 'WAITING';
     crashGame.currentMultiplier = 1.00;
     crashGame.targetMultiplier = generateCrashMultiplier(); // Генерируем заранее!
     crashGame.userBet = null;
@@ -1100,17 +1612,24 @@ function startCrashGameLoop() {
     crashGame.isBettingPhase = true;
     crashGame.roundNumber++;
     
+    // Переходим в состояние BETTING через конечный автомат
+    if (!crashStateMachine.transitionTo('BETTING', { roundNumber: crashGame.roundNumber })) {
+        console.error('Не удалось перейти в состояние BETTING');
+        crashStateMachine.transitionTo('ERROR');
+        return;
+    }
+    
     // Обновляем UI
     updateGameStatus('Идет прием ставок');
     updateMultiplierDisplay('1.00x');
     updateMainActionButton();
     resetChart();
     
-    console.log(`Раунд #${crashGame.roundNumber}: Целевой множитель = ${crashGame.targetMultiplier.toFixed(2)}x`);
+    console.log(`🎮 Раунд #${crashGame.roundNumber}: Целевой множитель = ${crashGame.targetMultiplier.toFixed(2)}x`);
     
     // Время приема ставок - 5 секунд
     setTimeout(() => {
-        if (crashGame.gameState === 'WAITING') {
+        if (crashStateMachine.isInState('BETTING')) {
             crashGame.isBettingPhase = false;
             startRound();
         }
@@ -1119,7 +1638,13 @@ function startCrashGameLoop() {
 
 // Начало раунда
 function startRound() {
-    crashGame.gameState = 'IN_PROGRESS';
+    // Переходим в состояние RUNNING через конечный автомат
+    if (!crashStateMachine.transitionTo('RUNNING', { roundNumber: crashGame.roundNumber })) {
+        console.error('Не удалось перейти в состояние RUNNING');
+        crashStateMachine.transitionTo('ERROR');
+        return;
+    }
+    
     crashGame.roundStartTime = Date.now();
     
     updateGameStatus('В игре!');
@@ -1136,7 +1661,7 @@ function startRound() {
  * Создает напряжение через изменение скорости роста в зависимости от фазы
  */
 function animateMultiplier() {
-    if (crashGame.gameState !== 'IN_PROGRESS') return;
+    if (!crashStateMachine.isInState('RUNNING')) return;
     
     const elapsed = Date.now() - crashGame.roundStartTime;
     const maxDuration = getMaxRoundDuration(crashGame.targetMultiplier);
@@ -1178,52 +1703,55 @@ function getMaxRoundDuration(targetMultiplier) {
 /**
  * Вычисляет нелинейный прогресс роста множителя
  * Создает разные фазы роста для максимального напряжения
+ * Улучшенная версия с более реалистичной кривой роста
  */
 function calculateNonLinearProgress(progress, targetMultiplier) {
-    // Фаза 1: Медленный старт (1x - 2x)
-    if (targetMultiplier <= 2.0) {
-        // Плавный рост для низких множителей
-        return 1 - Math.pow(1 - progress, 2);
+    // Базовое ускорение - чем выше целевой множитель, тем больше ускорение
+    const accelerationFactor = Math.min(targetMultiplier / 10, 3); // Максимум 3x ускорение
+    
+    // Фаза 1: Медленный старт (0-25% времени) - множитель растет от 1.00x до ~1.50x
+    if (progress <= 0.25) {
+        const phaseProgress = progress / 0.25;
+        // Очень медленный рост в начале для создания напряжения
+        const slowGrowth = Math.pow(phaseProgress, 3 + accelerationFactor) * 0.15;
+        return slowGrowth;
     }
     
-    // Фаза 2: Средний рост (2x - 5x)
-    if (targetMultiplier <= 5.0) {
-        if (progress <= 0.3) {
-            // Медленный старт
-            return (progress / 0.3) * 0.2;
-        } else if (progress <= 0.7) {
-            // Ускорение
-            const subProgress = (progress - 0.3) / 0.4;
-            return 0.2 + (subProgress * subProgress) * 0.5;
-        } else {
-            // Быстрый финиш
-            const subProgress = (progress - 0.7) / 0.3;
-            return 0.7 + (1 - Math.pow(1 - subProgress, 3)) * 0.3;
-        }
+    // Фаза 2: Средний рост (25-60% времени) - множитель растет от ~1.50x до ~3.00x
+    if (progress <= 0.60) {
+        const phaseProgress = (progress - 0.25) / 0.35;
+        // Ускоряющийся рост
+        const mediumGrowth = 0.15 + Math.pow(phaseProgress, 1.8 + accelerationFactor) * 0.45;
+        return mediumGrowth;
     }
     
-    // Фаза 3: Высокий рост (5x+)
-    if (progress <= 0.2) {
-        // Очень медленный старт
-        return (progress / 0.2) * 0.1;
-    } else if (progress <= 0.5) {
-        // Постепенное ускорение
-        const subProgress = (progress - 0.2) / 0.3;
-        return 0.1 + (subProgress * subProgress) * 0.3;
-    } else if (progress <= 0.8) {
-        // Быстрое ускорение
-        const subProgress = (progress - 0.5) / 0.3;
-        return 0.4 + (1 - Math.pow(1 - subProgress, 2)) * 0.4;
-    } else {
-        // Экспоненциальный финиш
-        const subProgress = (progress - 0.8) / 0.2;
-        return 0.8 + (1 - Math.pow(1 - subProgress, 4)) * 0.2;
+    // Фаза 3: Быстрый рост (60-85% времени) - множитель растет от ~3.00x до ~6.00x
+    if (progress <= 0.85) {
+        const phaseProgress = (progress - 0.60) / 0.25;
+        // Быстро ускоряющийся рост
+        const fastGrowth = 0.60 + Math.pow(phaseProgress, 1.2 + accelerationFactor) * 0.25;
+        return fastGrowth;
     }
+    
+    // Фаза 4: Экспоненциальный финиш (85-100% времени) - множитель растет от ~6.00x до целевого
+    const phaseProgress = (progress - 0.85) / 0.15;
+    // Экспоненциальный финиш для создания максимального напряжения
+    const exponentialFinish = 0.85 + Math.pow(phaseProgress, 0.3 + accelerationFactor) * 0.15;
+    return exponentialFinish;
 }
 
 // Краш
 function crash() {
-    crashGame.gameState = 'CRASHED';
+    // Переходим в состояние CRASHED через конечный автомат
+    if (!crashStateMachine.transitionTo('CRASHED', { 
+        roundNumber: crashGame.roundNumber,
+        crashMultiplier: crashGame.targetMultiplier 
+    })) {
+        console.error('Не удалось перейти в состояние CRASHED');
+        crashStateMachine.transitionTo('ERROR');
+        return;
+    }
+    
     crashGame.currentMultiplier = crashGame.targetMultiplier;
     
     updateGameStatus('Краш!');
@@ -1243,6 +1771,8 @@ function crash() {
     
     // Сокращаем паузу до 1 секунды для непрерывной игры
     setTimeout(() => {
+        // Переходим обратно в WAITING перед новым раундом
+        crashStateMachine.transitionTo('WAITING');
         startCrashGameLoop();
     }, 1000);
 }
@@ -1252,9 +1782,14 @@ function crash() {
 /**
  * Обработка результатов раунда с защитой от двойных выплат
  * Использует флаги состояния для предотвращения race conditions
+ * Улучшенная версия с дополнительными проверками и транзакционной безопасностью
  */
 function processRoundResults() {
-    if (!crashGame.userBet) return;
+    // Проверяем, есть ли активная ставка
+    if (!crashGame.userBet || crashGame.userBet <= 0) {
+        console.log('Нет активной ставки для обработки результатов');
+        return;
+    }
     
     // Проверяем, не была ли уже обработана выплата
     if (crashGame.roundProcessed) {
@@ -1262,33 +1797,172 @@ function processRoundResults() {
         return;
     }
     
-    // Устанавливаем флаг обработки
+    // Проверяем, что раунд действительно завершен
+    if (!crashStateMachine.isInState('CRASHED')) {
+        console.warn('Попытка обработки результатов незавершенного раунда - игнорируем');
+        return;
+    }
+    
+    // Проверка безопасности игрового состояния
+    if (!crashSecurity.validateGameState(crashGame)) {
+        console.error('Обнаружено нарушение целостности игрового состояния');
+        crashStateMachine.transitionTo('ERROR');
+        return;
+    }
+    
+    // Устанавливаем флаг обработки СРАЗУ для предотвращения race conditions
     crashGame.roundProcessed = true;
     
-    if (crashGame.hasCashedOut && crashGame.cashOutMultiplier) {
-        // Пользователь успел вывести - используем сохраненный множитель
-        const winnings = Math.floor(crashGame.userBet * crashGame.cashOutMultiplier);
-        gameState.balance += winnings;
-        updateCrashBalance();
-        updateBalanceUI();
-        saveState();
+    // Сохраняем данные для обработки в атомарном виде
+    const transactionData = {
+        betAmount: crashGame.userBet,
+        cashedOut: crashGame.hasCashedOut,
+        cashOutMultiplier: crashGame.cashOutMultiplier,
+        crashMultiplier: crashGame.targetMultiplier,
+        roundNumber: crashGame.roundNumber,
+        timestamp: Date.now()
+    };
+    
+    // Сбрасываем ставку пользователя СРАЗУ после сохранения данных
+    crashGame.userBet = null;
+    crashGame.hasCashedOut = false;
+    crashGame.cashOutMultiplier = null;
+    
+    try {
+        // Проверяем баланс перед любой операцией
+        if (gameState.balance < 0) {
+            console.error('Обнаружен отрицательный баланс! Сброс в 0.');
+            gameState.balance = 0;
+        }
         
-        // Показываем уведомление о выигрыше
-        showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+        if (transactionData.cashedOut && transactionData.cashOutMultiplier && transactionData.cashOutMultiplier > 0) {
+            // Пользователь успел вывести - используем сохраненный множитель
+            const winnings = Math.floor(transactionData.betAmount * transactionData.cashOutMultiplier);
+            
+            // Расширенные проверки на разумность выигрыша
+            if (winnings > 0 && 
+                winnings <= transactionData.betAmount * 1000 && // Максимум 1000x
+                winnings <= 10000000 && // Максимум 10M абсолютно
+                transactionData.cashOutMultiplier >= 1.00 &&
+                transactionData.cashOutMultiplier <= transactionData.crashMultiplier) {
+                
+                // Проверяем, что у нас достаточно средств для выплаты
+                const newBalance = gameState.balance + winnings;
+                if (newBalance < 0 || !isFinite(newBalance)) {
+                    console.error('Некорректный баланс после выплаты:', newBalance);
+                    return;
+                }
+                
+                // Атомарное обновление баланса
+                gameState.balance = newBalance;
+                updateCrashBalance();
+                updateBalanceUI();
+                saveState();
+                
+                // Показываем уведомление о выигрыше
+                showCrashNotification(`Выигрыш: ${winnings} ⭐`, 'success');
+                
+                console.log(`✅ Выплата: ${winnings} ⭐ (ставка: ${transactionData.betAmount}, множитель: ${transactionData.cashOutMultiplier.toFixed(2)}x, раунд: ${transactionData.roundNumber})`);
+                
+                // Логируем успешную транзакцию для аудита
+                logTransaction('WIN', transactionData, winnings);
+            } else {
+                console.error('Некорректные данные для выплаты:', {
+                    winnings,
+                    betAmount: transactionData.betAmount,
+                    cashOutMultiplier: transactionData.cashOutMultiplier,
+                    crashMultiplier: transactionData.crashMultiplier
+                });
+                // В случае ошибки просто не списываем ставку
+            }
+        } else {
+            // Пользователь проиграл - списываем ставку
+            if (gameState.balance >= transactionData.betAmount) {
+                const newBalance = gameState.balance - transactionData.betAmount;
+                
+                // Проверяем корректность нового баланса
+                if (newBalance >= 0 && isFinite(newBalance)) {
+                    // Атомарное обновление баланса
+                    gameState.balance = newBalance;
+                    updateCrashBalance();
+                    updateBalanceUI();
+                    saveState();
+                    
+                    // Показываем уведомление о проигрыше
+                    showCrashNotification(`Проигрыш: ${transactionData.betAmount} ⭐`, 'error');
+                    
+                    console.log(`❌ Проигрыш: ${transactionData.betAmount} ⭐ (краш на ${transactionData.crashMultiplier.toFixed(2)}x, раунд: ${transactionData.roundNumber})`);
+                    
+                    // Логируем проигрышную транзакцию для аудита
+                    logTransaction('LOSS', transactionData, 0);
+                } else {
+                    console.error('Некорректный баланс после списания:', newBalance);
+                }
+            } else {
+                console.error('Недостаточно средств для списания ставки:', {
+                    balance: gameState.balance,
+                    betAmount: transactionData.betAmount
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при обработке результатов раунда:', error);
+        // В случае ошибки сбрасываем флаг для повторной попытки
+        crashGame.roundProcessed = false;
         
-        console.log(`Выплата: ${winnings} ⭐ (ставка: ${crashGame.userBet}, множитель: ${crashGame.cashOutMultiplier.toFixed(2)}x)`);
-    } else {
-        // Пользователь проиграл - списываем ставку
-        gameState.balance -= crashGame.userBet;
-        updateCrashBalance();
-        updateBalanceUI();
-        saveState();
-        
-        // Показываем уведомление о проигрыше
-        showCrashNotification(`Проигрыш: ${crashGame.userBet} ⭐`, 'error');
-        
-        console.log(`Проигрыш: ${crashGame.userBet} ⭐ (краш на ${crashGame.targetMultiplier.toFixed(2)}x)`);
+        // Логируем ошибку для отладки
+        logTransaction('ERROR', transactionData, 0, error.message);
     }
+}
+
+/**
+ * Логирование транзакций для аудита и отладки
+ * @param {string} type - Тип транзакции (WIN, LOSS, ERROR)
+ * @param {object} transactionData - Данные транзакции
+ * @param {number} amount - Сумма (для выигрыша) или 0
+ * @param {string} errorMessage - Сообщение об ошибке (если есть)
+ */
+function logTransaction(type, transactionData, amount, errorMessage = null) {
+    const logEntry = {
+        type,
+        timestamp: Date.now(),
+        roundNumber: transactionData.roundNumber,
+        betAmount: transactionData.betAmount,
+        cashOutMultiplier: transactionData.cashOutMultiplier,
+        crashMultiplier: transactionData.crashMultiplier,
+        amount,
+        errorMessage,
+        userAgent: navigator.userAgent,
+        sessionId: getSessionId()
+    };
+    
+    // В продакшене здесь можно отправить на сервер
+    console.log('📊 Транзакция:', logEntry);
+    
+    // Сохраняем в локальном хранилище для отладки
+    try {
+        const logs = JSON.parse(localStorage.getItem('crashTransactionLogs') || '[]');
+        logs.push(logEntry);
+        
+        // Ограничиваем количество логов
+        if (logs.length > 1000) {
+            logs.splice(0, logs.length - 1000);
+        }
+        
+        localStorage.setItem('crashTransactionLogs', JSON.stringify(logs));
+    } catch (e) {
+        console.error('Ошибка сохранения лога транзакции:', e);
+    }
+}
+
+/**
+ * Генерация уникального ID сессии для отслеживания
+ */
+function getSessionId() {
+    if (!window.crashSessionId) {
+        window.crashSessionId = 'crash_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    return window.crashSessionId;
 }
 
 // Обновление статуса игры
@@ -1320,7 +1994,9 @@ function updateMainActionButton() {
     button.className = 'main-action-button';
     button.disabled = false;
     
-    if (crashGame.gameState === 'WAITING') {
+    const currentState = crashStateMachine.getCurrentState();
+    
+    if (currentState === 'WAITING' || currentState === 'BETTING') {
         if (crashGame.isBettingPhase) {
             if (crashGame.userBet) {
                 button.textContent = 'Отменить ставку';
@@ -1333,7 +2009,7 @@ function updateMainActionButton() {
             button.classList.add('disabled');
             button.disabled = true;
         }
-    } else if (crashGame.gameState === 'IN_PROGRESS') {
+    } else if (currentState === 'RUNNING') {
         if (crashGame.userBet && !crashGame.hasCashedOut) {
             const potentialWin = Math.floor(crashGame.userBet * crashGame.currentMultiplier);
             button.textContent = `Вывести ${potentialWin}`;
@@ -1347,9 +2023,12 @@ function updateMainActionButton() {
             button.classList.add('disabled');
             button.disabled = true;
         }
-    } else {
-        // CRASHED
+    } else if (currentState === 'CRASHED') {
         button.textContent = 'Прием ставок завершен';
+        button.classList.add('disabled');
+        button.disabled = true;
+    } else if (currentState === 'ERROR') {
+        button.textContent = 'Ошибка игры';
         button.classList.add('disabled');
         button.disabled = true;
     }
@@ -1398,33 +2077,57 @@ function updateChart(multiplier) {
 
 /**
  * Динамическое изменение цвета графика в зависимости от множителя
+ * Улучшенная версия с плавными переходами и градиентами
  */
 function updateChartColor(multiplier) {
     if (!crashGame.chart) return;
     
-    let color, backgroundColor;
+    const ctx = crashGame.chart.ctx;
+    
+    // Создаем динамический градиент в зависимости от текущего множителя
+    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
     
     if (multiplier < 2.0) {
-        // Зеленый для низких множителей
-        color = '#00ff00';
-        backgroundColor = 'rgba(0, 255, 0, 0.1)';
+        // Зеленый градиент для низких множителей
+        gradient.addColorStop(0, 'rgba(0, 255, 0, 0.9)');
+        gradient.addColorStop(0.5, 'rgba(0, 255, 100, 0.7)');
+        gradient.addColorStop(1, 'rgba(0, 255, 0, 0.5)');
     } else if (multiplier < 5.0) {
-        // Желтый для средних множителей
-        color = '#ffff00';
-        backgroundColor = 'rgba(255, 255, 0, 0.1)';
+        // Желтый градиент для средних множителей
+        gradient.addColorStop(0, 'rgba(255, 255, 0, 0.9)');
+        gradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.7)');
+        gradient.addColorStop(1, 'rgba(255, 255, 0, 0.5)');
     } else if (multiplier < 10.0) {
-        // Оранжевый для высоких множителей
-        color = '#ff8800';
-        backgroundColor = 'rgba(255, 136, 0, 0.1)';
+        // Оранжевый градиент для высоких множителей
+        gradient.addColorStop(0, 'rgba(255, 136, 0, 0.9)');
+        gradient.addColorStop(0.5, 'rgba(255, 100, 0, 0.7)');
+        gradient.addColorStop(1, 'rgba(255, 136, 0, 0.5)');
     } else {
-        // Красный для очень высоких множителей
-        color = '#ff0000';
-        backgroundColor = 'rgba(255, 0, 0, 0.1)';
+        // Красный градиент для очень высоких множителей
+        gradient.addColorStop(0, 'rgba(255, 0, 0, 0.9)');
+        gradient.addColorStop(0.5, 'rgba(255, 50, 50, 0.7)');
+        gradient.addColorStop(1, 'rgba(255, 0, 0, 0.5)');
+    }
+    
+    // Создаем соответствующий градиент для заливки
+    const fillGradient = ctx.createLinearGradient(0, 0, 0, 250);
+    if (multiplier < 2.0) {
+        fillGradient.addColorStop(0, 'rgba(0, 255, 0, 0.2)');
+        fillGradient.addColorStop(1, 'rgba(0, 255, 0, 0.05)');
+    } else if (multiplier < 5.0) {
+        fillGradient.addColorStop(0, 'rgba(255, 255, 0, 0.2)');
+        fillGradient.addColorStop(1, 'rgba(255, 255, 0, 0.05)');
+    } else if (multiplier < 10.0) {
+        fillGradient.addColorStop(0, 'rgba(255, 136, 0, 0.2)');
+        fillGradient.addColorStop(1, 'rgba(255, 136, 0, 0.05)');
+    } else {
+        fillGradient.addColorStop(0, 'rgba(255, 0, 0, 0.2)');
+        fillGradient.addColorStop(1, 'rgba(255, 0, 0, 0.05)');
     }
     
     // Обновляем цвета
-    crashGame.chart.data.datasets[0].borderColor = color;
-    crashGame.chart.data.datasets[0].backgroundColor = backgroundColor;
+    crashGame.chart.data.datasets[0].borderColor = gradient;
+    crashGame.chart.data.datasets[0].backgroundColor = fillGradient;
 }
 
 // Показ уведомления
@@ -1540,38 +2243,91 @@ function initCrashEventHandlers() {
     
     // ==================== ОБРАБОТЧИКИ СОБЫТИЙ С ИСПРАВЛЕННОЙ ЛОГИКОЙ ====================
     
-    // Главная кнопка действия
+    // Главная кнопка действия с защитой от множественных кликов
     const mainActionBtn = document.getElementById('main-action-btn');
     if (mainActionBtn) {
+        let isProcessing = false; // Флаг для предотвращения множественных кликов
+        
         mainActionBtn.onclick = function() {
-            if (crashGame.gameState === 'WAITING' && crashGame.isBettingPhase) {
-                if (crashGame.userBet) {
-                    // Отменить ставку
-                    crashGame.userBet = null;
-                    updateMainActionButton();
-                    console.log('Ставка отменена');
-                } else {
-                    // Сделать ставку
-                    if (crashGame.betAmount <= Math.floor(gameState.balance) && crashGame.betAmount > 0) {
-                        crashGame.userBet = crashGame.betAmount;
+            // Предотвращаем множественные клики
+            if (isProcessing) {
+                console.log('Игнорируем повторный клик - операция уже выполняется');
+                return;
+            }
+            
+            isProcessing = true;
+            
+            try {
+                const currentState = crashStateMachine.getCurrentState();
+                
+                if ((currentState === 'WAITING' || currentState === 'BETTING') && crashGame.isBettingPhase) {
+                    if (crashGame.userBet) {
+                        // Отменить ставку
+                        crashGame.userBet = null;
                         updateMainActionButton();
-                        console.log(`Ставка сделана: ${crashGame.betAmount} ⭐`);
+                        console.log('Ставка отменена');
                     } else {
-                        showCrashNotification('Недостаточно средств!', 'error');
+                        // Сделать ставку
+                        if (crashGame.betAmount <= Math.floor(gameState.balance) && crashGame.betAmount > 0) {
+                            // Проверка безопасности перед размещением ставки
+                            if (crashSecurity.checkSuspiciousActivity('BET_PLACED', {
+                                betAmount: crashGame.betAmount,
+                                timestamp: Date.now()
+                            })) {
+                                showCrashNotification('Подозрительная активность обнаружена!', 'error');
+                                return;
+                            }
+                            
+                            // Атомарное размещение ставки
+                            crashGame.userBet = crashGame.betAmount;
+                            updateMainActionButton();
+                            console.log(`Ставка сделана: ${crashGame.betAmount} ⭐`);
+                            
+                            // Логируем размещение ставки
+                            logTransaction('BET_PLACED', {
+                                betAmount: crashGame.betAmount,
+                                roundNumber: crashGame.roundNumber,
+                                timestamp: Date.now()
+                            }, 0);
+                        } else {
+                            showCrashNotification('Недостаточно средств!', 'error');
+                        }
+                    }
+                } else if (currentState === 'RUNNING') {
+                    if (crashGame.userBet && !crashGame.hasCashedOut) {
+                        // Вывести выигрыш - сохраняем множитель на момент вывода
+                        const cashOutTime = Date.now();
+                        const currentMultiplier = crashGame.currentMultiplier;
+                        
+                        // Проверяем, что множитель валиден
+                        if (currentMultiplier >= 1.00 && currentMultiplier <= crashGame.targetMultiplier) {
+                            crashGame.hasCashedOut = true;
+                            crashGame.cashOutMultiplier = currentMultiplier;
+                            
+                            // НЕ выплачиваем здесь - выплата будет в processRoundResults()
+                            updateMainActionButton();
+                            
+                            console.log(`Вывод на множителе: ${crashGame.cashOutMultiplier.toFixed(2)}x`);
+                            showCrashNotification(`Вывод на ${crashGame.cashOutMultiplier.toFixed(2)}x!`, 'success');
+                            
+                            // Логируем вывод средств
+                            logTransaction('CASH_OUT', {
+                                betAmount: crashGame.userBet,
+                                cashOutMultiplier: crashGame.cashOutMultiplier,
+                                roundNumber: crashGame.roundNumber,
+                                timestamp: cashOutTime
+                            }, 0);
+                        } else {
+                            console.error('Некорректный множитель для вывода:', currentMultiplier);
+                            showCrashNotification('Ошибка вывода средств!', 'error');
+                        }
                     }
                 }
-            } else if (crashGame.gameState === 'IN_PROGRESS') {
-                if (crashGame.userBet && !crashGame.hasCashedOut) {
-                    // Вывести выигрыш - сохраняем множитель на момент вывода
-                    crashGame.hasCashedOut = true;
-                    crashGame.cashOutMultiplier = crashGame.currentMultiplier;
-                    
-                    // НЕ выплачиваем здесь - выплата будет в processRoundResults()
-                    updateMainActionButton();
-                    
-                    console.log(`Вывод на множителе: ${crashGame.cashOutMultiplier.toFixed(2)}x`);
-                    showCrashNotification(`Вывод на ${crashGame.cashOutMultiplier.toFixed(2)}x!`, 'success');
-                }
+            } finally {
+                // Сбрасываем флаг обработки через небольшую задержку
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 100);
             }
         };
     }
