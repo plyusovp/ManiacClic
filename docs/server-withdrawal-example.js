@@ -1,6 +1,9 @@
 // server-withdrawal-example.js
 // Пример серверного кода для обработки запросов на вывод звёзд
 
+// Загружаем переменные окружения из .env файла
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
