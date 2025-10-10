@@ -154,29 +154,34 @@ app.post('/api/withdrawal/create', async (req, res) => {
                        `⏰ Время: ${timestamp}\n\n` +
                        `Заявка отправлена на рассмотрение администратору.`;
         
+        // Пытаемся отправить уведомление, но не блокируем успешный ответ
         const messageSent = await sendTelegramMessage(user_id, message);
         
         if (messageSent) {
-            // В реальном приложении здесь нужно сохранить заявку в базу данных
             console.log('Заявка успешно создана и уведомление отправлено');
-            
-            res.json({
-                success: true,
-                message: 'Заявка на вывод успешно создана',
-                data: {
-                    transaction_id: app_transaction_id,
-                    amount: amount,
-                    bot_stars: botStars,
-                    timestamp: timestamp
-                }
-            });
         } else {
-            console.error('Не удалось отправить уведомление пользователю');
-            res.status(500).json({
-                success: false,
-                error: 'Заявка создана, но не удалось отправить уведомление'
-            });
+            console.log('Заявка создана, но уведомление не отправлено (пользователь может не писать боту)');
         }
+        
+        // В реальном приложении здесь нужно сохранить заявку в базу данных
+        console.log('Заявка на вывод создана:', {
+            user_id,
+            amount,
+            app_transaction_id,
+            botStars,
+            timestamp
+        });
+        
+        res.json({
+            success: true,
+            message: 'Заявка на вывод успешно создана',
+            data: {
+                transaction_id: app_transaction_id,
+                amount: amount,
+                bot_stars: botStars,
+                timestamp: timestamp
+            }
+        });
         
     } catch (error) {
         console.error('Ошибка при создании заявки на вывод:', error);
