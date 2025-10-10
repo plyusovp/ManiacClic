@@ -1,270 +1,209 @@
-# ⭐ Maniac Click - Telegram WebApp Game
+# ManiacClic - Telegram WebApp Game
 
-Космический кликер с 3D звёздами, игрой Краш и системой вывода звёзд в Telegram боте.
-
-![Maniac Click](https://img.shields.io/badge/Game-Maniac%20Click-blue)
-![Telegram](https://img.shields.io/badge/Platform-Telegram%20WebApp-blue)
-![JavaScript](https://img.shields.io/badge/Language-JavaScript-yellow)
-![Three.js](https://img.shields.io/badge/3D-Three.js-green)
-
-## 🎮 Особенности
-
-- **3D Звёзды** - Интерактивная 3D модель с анимациями
-- **Игра Краш** - Азартная игра с множителями и графиком
-- **Система энергии** - Реалистичная механика восстановления
-- **Вывод звёзд** - Интеграция с Telegram ботом
-- **Адаптивный дизайн** - Работает на всех устройствах
+Игра-кликер для Telegram с интеграцией API бота для вывода звёзд.
 
 ## 🚀 Быстрый старт
 
-### 1. Клонирование репозитория
+### 1. Установка и запуск сервера
+
 ```bash
-git clone https://github.com/your-username/maniac-click.git
-cd maniac-click
-```
-
-### 2. Настройка веб-приложения
-Откройте `docs/index.html` в браузере или загрузите на хостинг.
-
-### 3. Настройка сервера для вывода звёзд
-
-#### Создайте сервер:
-```bash
-mkdir telegram-bot-server
-cd telegram-bot-server
-```
-
-#### Установите зависимости:
-```bash
-npm install express cors dotenv
-```
-
-#### Скопируйте файлы сервера:
-- `docs/server-example.js` → `server.js`
-- `docs/package.json` → `package.json`
-- `docs/env.example` → `.env`
-
-#### Настройте токен бота:
-1. Получите токен у [@BotFather](https://t.me/BotFather)
-2. Обновите файл `.env`:
-```env
-BOT_TOKEN=ваш_токен_здесь
-PORT=8080
-```
-
-#### Запустите сервер:
-```bash
+cd docs
+npm install
+cp env.example .env
 npm start
 ```
+
+### 2. Проверка работы
+
+Откройте в браузере: http://localhost:8080/api/health
+
+### 3. Тестирование в Telegram
+
+1. Откройте приложение в Telegram WebApp
+2. Перейдите в раздел "Вывод"
+3. Выберите сумму и подтвердите вывод
+4. Проверьте уведомление в боте
 
 ## 📁 Структура проекта
 
 ```
-maniac-click/
-├── docs/                          # Основные файлы приложения
-│   ├── index.html                 # Главная страница
-│   ├── main.js                    # Основная логика игры
-│   ├── style.css                  # Стили
-│   ├── api_config.js              # Конфигурация API
-│   ├── server-example.js          # Пример серверного кода
-│   ├── package.json               # Зависимости сервера
-│   ├── env.example                # Пример конфигурации
-│   ├── SETUP_GUIDE.md             # Руководство по настройке
-│   └── STEP_BY_STEP_GUIDE.md      # Пошаговая инструкция
-├── README.md                      # Этот файл
-└── .gitignore                     # Игнорируемые файлы
+ManiacClic/
+├── docs/
+│   ├── index.html              # Основной HTML файл
+│   ├── main.js                 # Логика приложения и API интеграция
+│   ├── style.css               # Стили
+│   ├── api_config.js           # Конфигурация API
+│   ├── server-withdrawal-example.js  # Сервер для обработки выводов
+│   ├── package.json            # Зависимости Node.js
+│   ├── env.example             # Пример переменных окружения
+│   ├── .env                    # Переменные окружения (создается автоматически)
+│   └── WITHDRAWAL_INTEGRATION_GUIDE.md  # Подробная документация
+├── README.md                   # Этот файл
+└── GITHUB_SETUP.md             # Инструкции по настройке GitHub
 ```
-
-## 🎯 Игровые механики
-
-### Кликер
-- Кликайте по 3D звезде для получения очков
-- Тратьте энергию на каждый клик
-- Энергия восстанавливается автоматически
-
-### Игра Краш
-- Делайте ставки перед началом раунда
-- Наблюдайте за ростом множителя
-- Выводите выигрыш до краша
-
-### Вывод звёзд
-- Конвертация: 200 игровых звёзд = 1 звезда бота
-- Комиссия: 5-7% в зависимости от суммы
-- Уведомления в Telegram боте
 
 ## 🔧 Настройка
 
-### Конфигурация API
-Обновите `docs/api_config.js`:
-```javascript
-// Для локальной разработки
-const API_URL = "http://localhost:8080/api/withdraw";
+### Переменные окружения
 
-// Для продакшена
-const API_URL = "https://your-domain.com/api/withdraw";
+Файл `.env` уже настроен с вашими данными:
+
+```env
+BOT_TOKEN=8062263060:AAG8plBlQhs9B0ymG5su9llSrcLT5Oh-U4s
+SECRET_KEY=maniac-stars-secret-key-2024
+PORT=8080
 ```
 
-### Настройка CORS
-В файле сервера добавьте ваш домен:
-```javascript
-const allowedOrigins = [
-  'https://telegram.org',
-  'https://web.telegram.org',
-  'https://your-domain.com' // Ваш домен
-];
+### API Endpoints
+
+- `GET /api/health` - Проверка статуса сервера
+- `GET /api/info` - Информация о сервере
+- `POST /api/withdrawal/create` - Создание заявки на вывод
+
+## 🎮 Игровые функции
+
+- **Кликер** - кликайте по звезде для заработка
+- **Энергия** - ограничивает количество кликов
+- **Краш** - игра на множители
+- **Вывод** - интеграция с Telegram ботом
+
+## 🔒 Безопасность
+
+- HMAC-SHA256 подписи для всех запросов
+- Валидация данных на сервере
+- Уникальные ID транзакций
+- Проверка подписей с защитой от timing атак
+
+## 📊 Мониторинг
+
+### Логи сервера
+
+Сервер выводит подробные логи всех операций:
+
+```
+🚀 Сервер запущен на порту 8080
+📊 API доступно по адресу: http://localhost:8080/api
+🔑 Секретный ключ настроен: true
+🤖 Токен бота настроен: true
 ```
 
-## 🌐 Деплой
+### Проверка статуса
 
-### Vercel (рекомендуется)
 ```bash
-npm install -g vercel
-vercel --prod
+curl http://localhost:8080/api/health
+curl http://localhost:8080/api/info
 ```
 
-### Netlify
-1. Подключите GitHub репозиторий
-2. Настройте build команду: `npm run build`
-3. Deploy
+## 🚀 Развертывание в продакшене
 
 ### Heroku
+
 ```bash
 heroku create your-app-name
+heroku config:set BOT_TOKEN=your_bot_token
+heroku config:set SECRET_KEY=your_secret_key
 git push heroku main
 ```
 
-## 📱 Telegram WebApp
+### Railway
 
-### Создание бота
-1. Найдите [@BotFather](https://t.me/BotFather)
-2. Создайте нового бота: `/newbot`
-3. Настройте WebApp: `/newapp`
-4. Укажите URL вашего приложения
-
-### Настройка меню
+```bash
+railway login
+railway init
+# Настройте переменные в панели Railway
+railway up
 ```
-/setmenubutton
-@your_bot_name
-🎮 Играть
+
+### Vercel
+
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+## 📱 Интеграция с Telegram
+
+### WebApp
+
+Приложение работает как Telegram WebApp и получает данные пользователя через `window.Telegram.WebApp`.
+
+### Bot API
+
+Сервер отправляет уведомления пользователям через Telegram Bot API.
+
+### Формат уведомления
+
+```
+🎉 Заявка на вывод создана!
+
+💰 Сумма: 200 ⭐
+📊 Звёзд в боте: 1
+🆔 ID транзакции: tx_1234567890_abc123
+⏰ Время: 2024-01-15T10:30:00.000Z
+
+Заявка отправлена на рассмотрение администратору.
 ```
 
 ## 🛠️ Разработка
 
-### Требования
-- Node.js 16+
-- Современный браузер
-- Telegram Bot Token
+### Структура API
 
-### Установка зависимостей
-```bash
-cd telegram-bot-server
-npm install
+```javascript
+// Создание заявки на вывод
+const response = await fetch('/api/withdrawal/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        user_id: 123456789,
+        amount: 200,
+        app_transaction_id: 'tx_1234567890_abc123',
+        signature: 'hmac_signature_here'
+    })
+});
 ```
 
-### Запуск в режиме разработки
-```bash
-npm run dev
+### Генерация подписи
+
+```javascript
+const signature = await crypto.subtle.sign('HMAC', key, messageData);
 ```
 
-## 📊 API Endpoints
+## 📖 Документация
 
-### POST /api/withdraw
-Вывод звёзд в бота
-
-**Запрос:**
-```json
-{
-  "amount": 200,
-  "user_id": 123456789,
-  "username": "user",
-  "first_name": "Имя",
-  "initData": "telegram_init_data"
-}
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "message": "Зачислено 1 звёзд в боте",
-  "data": {
-    "user_id": 123456789,
-    "amount": 200,
-    "botStars": 1,
-    "timestamp": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-## 🔒 Безопасность
-
-- Валидация данных Telegram WebApp
-- Проверка подписи initData
-- Rate limiting для API
-- CORS защита
+- [WITHDRAWAL_INTEGRATION_GUIDE.md](docs/WITHDRAWAL_INTEGRATION_GUIDE.md) - Подробное руководство по интеграции
+- [SETUP_GUIDE.md](docs/SETUP_GUIDE.md) - Устаревшее руководство (ссылается на новое)
 
 ## 🐛 Отладка
 
 ### Консоль браузера
-Откройте F12 и проверьте:
-- Ошибки JavaScript
-- Сетевые запросы
-- Данные Telegram WebApp
+
+Откройте F12 → Console для просмотра логов клиента.
 
 ### Логи сервера
+
+Все операции логируются в терминал сервера.
+
+### Проверка переменных
+
 ```bash
-# Проверка работы сервера
-curl http://localhost:8080
-
-# Тест API
-curl -X POST http://localhost:8080/api/withdraw \
-  -H "Content-Type: application/json" \
-  -d '{"amount":200,"user_id":123456789}'
+curl http://localhost:8080/api/info
 ```
-
-## 📈 Мониторинг
-
-### Логи
-- Успешные выводы
-- Ошибки API
-- Статистика пользователей
-
-### Метрики
-- Количество выводов
-- Суммы транзакций
-- Активность пользователей
-
-## 🤝 Вклад в проект
-
-1. Fork репозитория
-2. Создайте feature branch: `git checkout -b feature/new-feature`
-3. Commit изменения: `git commit -am 'Add new feature'`
-4. Push в branch: `git push origin feature/new-feature`
-5. Создайте Pull Request
 
 ## 📄 Лицензия
 
-MIT License - см. файл [LICENSE](LICENSE)
+MIT License
 
-## 👨‍💻 Автор
+## 🤝 Поддержка
 
-**Your Name**
-- GitHub: [@your-username](https://github.com/your-username)
-- Telegram: [@your-telegram](https://t.me/your-telegram)
+При возникновении проблем:
 
-## 🙏 Благодарности
-
-- [Three.js](https://threejs.org/) - 3D графика
-- [Chart.js](https://www.chartjs.org/) - Графики
-- [Telegram WebApp API](https://core.telegram.org/bots/webapps)
-
-## 📞 Поддержка
-
-Если у вас возникли вопросы:
-1. Проверьте [FAQ](docs/SETUP_GUIDE.md)
-2. Создайте [Issue](https://github.com/your-username/maniac-click/issues)
-3. Напишите в [Telegram](https://t.me/your-telegram)
+1. Проверьте логи сервера
+2. Проверьте консоль браузера
+3. Убедитесь в правильности переменных окружения
+4. Проверьте доступность API эндпоинтов
 
 ---
 
-⭐ **Поставьте звезду, если проект вам понравился!**
+**Статус:** ✅ Готово к использованию
+**Сервер:** 🟢 Запущен на http://localhost:8080
+**GitHub:** 🔗 https://github.com/plyusovp/ManiacClic
