@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Логика подтверждения вывода
-        withdrawConfirmBtn.onclick = () => {
+        withdrawConfirmBtn.onclick = async () => {
             if (withdrawConfirmBtn.disabled || selectedAmount === 0) return;
             const amount = selectedAmount;
             const commissionRate = getCommission(amount);
@@ -582,79 +582,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalDeducted = amount + commission;
 
             if (totalDeducted <= userBalance) {
-                const botStars = amount / 200;
-                
                 // Получаем данные пользователя
                 const userData = getTelegramUserData();
                 
-                // Подготавливаем данные для отправки боту
-                const withdrawData = {
-                    action: "withdraw",
-                    user_id: userData?.id || null,
-                    user_info: userData,
-                    withdraw_amount: amount,
-                    commission_amount: commission,
-                    total_deducted: totalDeducted,
-                    bot_stars_received: botStars,
-                    timestamp: Date.now(),
-                    game_version: "1.0"
-                };
-                
-                // Отправляем данные боту
-                console.log('Попытка отправки данных боту:', withdrawData);
-                
-                // Пробуем разные способы отправки данных
-                let dataSent = false;
-                
-                // Способ 1: tg.sendData
-                if (typeof tg.sendData === 'function') {
-                    try {
-                        tg.sendData(JSON.stringify(withdrawData));
-                        console.log('✅ Данные отправлены через tg.sendData');
-                        dataSent = true;
-                    } catch (error) {
-                        console.error('❌ Ошибка tg.sendData:', error);
-                    }
-                }
-                
-                // Способ 2: tg.MainButton (если первый не сработал)
-                if (!dataSent && tg.MainButton) {
-                    try {
-                        tg.MainButton.setText('Вывод выполнен!');
-                        tg.MainButton.show();
-                        tg.MainButton.onClick(() => {
-                            tg.close();
-                        });
-                        console.log('✅ Используем MainButton как fallback');
-                        dataSent = true;
-                    } catch (error) {
-                        console.error('❌ Ошибка MainButton:', error);
-                    }
-                }
-                
-                // Способ 3: alert с данными для копирования
-                if (!dataSent) {
-                    const dataString = JSON.stringify(withdrawData, null, 2);
-                    alert('WebApp API недоступен. Скопируйте данные:\n\n' + dataString);
-                    console.log('❌ Все способы отправки не сработали');
+                if (!userData || !userData.id) {
+                    showWithdrawalNotification('Ошибка: не удалось получить данные пользователя', 'error');
                     return;
                 }
 
-                // Обновляем локальное состояние только после успешной отправки
-                gameState.balance -= totalDeducted;
-                gameState.withdrawalsToday.count++;
-                saveState();
+                // Блокируем кнопку во время обработки
+                withdrawConfirmBtn.disabled = true;
+                withdrawConfirmBtn.textContent = 'Обработка...';
+                
+                try {
+                    // Отправляем запрос на создание заявки на вывод через API
+                    const response = await createWithdrawalRequest(amount, userData);
+                    
+                    // Обрабатываем ответ сервера
+                    handleWithdrawalResponse(response, amount);
+                    
+                    // Если запрос успешен, обновляем локальное состояние
+                    if (response.success) {
+                        gameState.balance -= totalDeducted;
+                        gameState.withdrawalsToday.count++;
+                        saveState();
+                        
+                        // Обновляем UI
+                        updateBalanceUI();
+                        
+                        // Показываем модальное окно успеха
+                        document.getElementById('success-message').innerText = `Заявка на вывод ⭐ ${(amount / 200).toLocaleString('ru-RU')} звёзд отправлена на рассмотрение!`;
+                        successModal.classList.remove('hidden');
 
-                document.getElementById('success-message').innerText = `⭐ ${botStars.toLocaleString('ru-RU')} звёзд зачислены в бота.`;
-                successModal.classList.remove('hidden');
-
-                setTimeout(() => {
-                    successModal.classList.add('hidden');
-                    updateBalanceUI();
-                    showScreen(gameScreen);
-                    startEnergyRegen();
-                    initThreeJSScene();
-                }, 3000);
+                        setTimeout(() => {
+                            successModal.classList.add('hidden');
+                            showScreen(gameScreen);
+                            startEnergyRegen();
+                            initThreeJSScene();
+                        }, 3000);
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка при создании заявки на вывод:', error);
+                    showWithdrawalNotification(
+                        'Ошибка при отправке заявки на вывод. Попробуйте позже.',
+                        'error'
+                    );
+                } finally {
+                    // Разблокируем кнопку
+                    withdrawConfirmBtn.disabled = false;
+                    withdrawConfirmBtn.textContent = 'Подтвердить вывод';
+                }
             }
         };
 
@@ -691,6 +669,174 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Ошибка отправки данных в Telegram:', e);
             return false;
         }
+    }
+
+    // --- НОВЫЕ ФУНКЦИИ ДЛЯ API ИНТЕГРАЦИИ ---
+    
+    /**
+     * Генерация HMAC-SHA256 подписи для запроса
+     * @param {string} data - Данные для подписи
+     * @param {string} secret - Секретный ключ
+     * @returns {string} HMAC подпись в hex формате
+     */
+    async function generateHMACSignature(data, secret) {
+        try {
+            const encoder = new TextEncoder();
+            const keyData = encoder.encode(secret);
+            const messageData = encoder.encode(data);
+            
+            const key = await crypto.subtle.importKey(
+                'raw',
+                keyData,
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            
+            const signature = await crypto.subtle.sign('HMAC', key, messageData);
+            const signatureArray = new Uint8Array(signature);
+            const signatureHex = Array.from(signatureArray)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+            
+            return signatureHex;
+        } catch (error) {
+            console.error('Ошибка генерации HMAC подписи:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Генерация уникального ID транзакции
+     * @returns {string} Уникальный ID транзакции
+     */
+    function generateTransactionId() {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 15);
+        return `tx_${timestamp}_${random}`;
+    }
+
+    /**
+     * Получение секретного ключа для подписи
+     * В продакшене этот ключ должен храниться безопасно на сервере
+     * @returns {string} Секретный ключ
+     */
+    function getSecretKey() {
+        // ВАЖНО: Этот ключ должен совпадать с SECRET_KEY в .env файле сервера!
+        return 'maniac-stars-secret-key-2024'; // Должен совпадать с ключом на сервере
+    }
+
+    /**
+     * Отправка запроса на создание заявки на вывод
+     * @param {number} amount - Сумма для вывода
+     * @param {object} userData - Данные пользователя
+     * @returns {Promise<object>} Ответ сервера
+     */
+    async function createWithdrawalRequest(amount, userData) {
+        try {
+            const appTransactionId = generateTransactionId();
+            const user_id = userData.id;
+            
+            // Формируем данные для подписи
+            const signatureData = `${user_id}_${amount}_${appTransactionId}`;
+            const signature = await generateHMACSignature(signatureData, getSecretKey());
+            
+            // Формируем тело запроса
+            const requestBody = {
+                user_id: user_id,
+                amount: amount,
+                app_transaction_id: appTransactionId,
+                signature: signature
+            };
+            
+            console.log('Отправляем запрос на вывод:', requestBody);
+            
+            // Отправляем запрос
+            const response = await fetch(window.API_URL || 'http://localhost:8080/api/withdrawal/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Ответ сервера:', result);
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Ошибка при создании заявки на вывод:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Обработка ответа от сервера и показ уведомления пользователю
+     * @param {object} response - Ответ от сервера
+     * @param {number} amount - Сумма вывода
+     */
+    function handleWithdrawalResponse(response, amount) {
+        if (response.success) {
+            // Успешное создание заявки
+            const botStars = amount / 200;
+            showWithdrawalNotification(
+                `Заявка на вывод отправлена на рассмотрение! Вы получите ⭐ ${botStars} звёзд в боте.`,
+                'success'
+            );
+        } else {
+            // Ошибка при создании заявки
+            const errorMessage = response.error || response.message || 'Произошла ошибка при создании заявки';
+            showWithdrawalNotification(errorMessage, 'error');
+        }
+    }
+
+    /**
+     * Показ уведомления о результате вывода
+     * @param {string} message - Сообщение
+     * @param {string} type - Тип уведомления ('success' или 'error')
+     */
+    function showWithdrawalNotification(message, type) {
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+        notification.className = `withdrawal-notification ${type}`;
+        notification.textContent = message;
+        
+        // Стили для уведомления
+        Object.assign(notification.style, {
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: type === 'success' ? 'linear-gradient(135deg, #00ff00, #00cc00)' : 'linear-gradient(135deg, #ff4444, #cc0000)',
+            color: 'white',
+            padding: '15px 25px',
+            borderRadius: '12px',
+            fontFamily: 'Orbitron, Exo 2, sans-serif',
+            fontWeight: '700',
+            fontSize: '1.1rem',
+            zIndex: '10000',
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)',
+            animation: 'slideDown 0.3s ease-out',
+            maxWidth: '90%',
+            textAlign: 'center'
+        });
+        
+        document.body.appendChild(notification);
+        
+        // Удаляем через 5 секунд
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
     }
 
     // --- ОБЩИЕ ФУНКЦИИ И ЗАПУСК ---
