@@ -49,7 +49,7 @@ ManiacClic/
 Файл `.env` уже настроен с вашими данными:
 
 ```env
-BOT_TOKEN=8062263060:AAG8plBlQhs9B0ymG5su9llSrcLT5Oh-U4s
+BOT_TOKEN=8062263060:AAF4RbvNQuAn6Zx-IHv3kNf615iuwnttKC0
 SECRET_KEY=maniac-stars-secret-key-2024
 PORT=8080
 ```
