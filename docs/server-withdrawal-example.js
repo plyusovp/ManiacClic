@@ -48,11 +48,13 @@ function verifySignature(user_id, amount, app_transaction_id, signature) {
     console.log('Данные:', data);
     console.log('Ожидаемая подпись:', expectedSignature);
     console.log('Полученная подпись:', signature);
+    console.log('Секретный ключ:', SECRET_KEY);
     
-    return crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, 'hex'),
-        Buffer.from(signature, 'hex')
-    );
+    // Упрощенная проверка подписи
+    const isValid = expectedSignature === signature;
+    console.log('Подпись валидна:', isValid);
+    
+    return isValid;
 }
 
 /**

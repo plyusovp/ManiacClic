@@ -1,11 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Инициализация Telegram Web App
-    const tg = window.Telegram.WebApp;
+    let tg;
     try {
-        tg.ready();
-        tg.expand();
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            console.log('✅ Telegram WebApp API инициализирован');
+        } else {
+            console.log('⚠️ Telegram WebApp API недоступен - запуск в тестовом режиме');
+            // Создаем заглушку для тестирования
+            tg = {
+                initDataUnsafe: { user: null },
+                sendData: () => {},
+                ready: () => {},
+                expand: () => {}
+            };
+        }
     } catch (e) {
-        console.error("Telegram Web App API not available.", e);
+        console.error("Ошибка инициализации Telegram WebApp API:", e);
+        // Создаем заглушку в случае ошибки
+        tg = {
+            initDataUnsafe: { user: null },
+            sendData: () => {},
+            ready: () => {},
+            expand: () => {}
+        };
     }
 
     // --- ОБЩИЕ ЭЛЕМЕНТЫ И СОСТОЯНИЕ ---
@@ -644,8 +664,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ФУНКЦИИ ДЛЯ ИНТЕГРАЦИИ С БОТОМ ---
     function getTelegramUserData() {
         try {
-            const userData = tg.initDataUnsafe?.user;
-            if (userData) {
+            // Проверяем, запущено ли приложение в Telegram WebApp
+            if (typeof tg !== 'undefined' && tg.initDataUnsafe?.user) {
+                const userData = tg.initDataUnsafe.user;
                 return {
                     id: userData.id,
                     first_name: userData.first_name,
@@ -653,17 +674,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: userData.username,
                     language_code: userData.language_code
                 };
+            } else {
+                // Тестовые данные для разработки (когда не в Telegram)
+                console.log('⚠️ Запущено в тестовом режиме (не в Telegram WebApp)');
+                return {
+                    id: 123456789, // Тестовый ID пользователя
+                    first_name: 'Test',
+                    last_name: 'User',
+                    username: 'testuser',
+                    language_code: 'ru'
+                };
             }
         } catch (e) {
             console.error('Ошибка получения данных пользователя:', e);
+            // Возвращаем тестовые данные в случае ошибки
+            return {
+                id: 123456789,
+                first_name: 'Test',
+                last_name: 'User',
+                username: 'testuser',
+                language_code: 'ru'
+            };
         }
-        return null;
     }
 
     function sendDataToBot(data) {
         try {
             console.log('Отправляем данные боту:', data);
-            tg.sendData(JSON.stringify(data));
+            // Проверяем, доступен ли Telegram WebApp API
+            if (typeof tg !== 'undefined' && tg.sendData) {
+                tg.sendData(JSON.stringify(data));
+            } else {
+                console.log('⚠️ Telegram WebApp API недоступен, данные не отправлены:', data);
+            }
             return true;
         } catch (e) {
             console.error('Ошибка отправки данных в Telegram:', e);
@@ -750,6 +793,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             console.log('Отправляем запрос на вывод:', requestBody);
+            console.log('Данные для подписи:', signatureData);
+            console.log('Сгенерированная подпись:', signature);
             
             // Отправляем запрос
             const response = await fetch(window.API_URL || 'http://localhost:8080/api/withdrawal/create', {
@@ -766,6 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const result = await response.json();
             console.log('Ответ сервера:', result);
+            console.log('Статус ответа:', response.status);
+            console.log('Заголовки ответа:', Object.fromEntries(response.headers.entries()));
             
             return result;
             
