@@ -1772,6 +1772,14 @@ function startCrashGameLoop() {
         cancelAnimationFrame(crashGame.animationId);
         crashGame.animationId = null;
     }
+
+    // --- ДОБАВЬТЕ ЭТИ 3 СТРОЧКИ ---
+    const flightStar = document.getElementById('flight-star');
+    if (flightStar) {
+        flightStar.classList.remove('crashed');
+        flightStar.style.bottom = '-15px'; // Сброс позиции
+    }
+    // -----------------------------
     
     // Сбрасываем состояние раунда
     crashGame.currentMultiplier = 1.00;
@@ -1835,20 +1843,47 @@ function startRound() {
  */
 function animateMultiplier() {
     if (!crashStateMachine.isInState('RUNNING')) return;
-    
+
     const elapsed = Date.now() - crashGame.roundStartTime;
     const maxDuration = getMaxRoundDuration(crashGame.targetMultiplier);
     const progress = Math.min(elapsed / maxDuration, 1);
-    
+
     // Нелинейная функция роста с ускорением
     const easeProgress = calculateNonLinearProgress(progress, crashGame.targetMultiplier);
     crashGame.currentMultiplier = 1 + (crashGame.targetMultiplier - 1) * easeProgress;
-    
+
+    // --- НОВЫЙ КОД ДЛЯ УПРАВЛЕНИЯ ЗВЕЗДОЙ ---
+    const flightStar = document.getElementById('flight-star');
+    const flightMultiplier = document.getElementById('flight-multiplier');
+    const flightArea = document.querySelector('.flight-animation-area');
+
+    if (flightStar && flightArea) {
+        // Рассчитываем позицию звезды на линии (от 0 до 100%)
+        const starPositionPercent = Math.min(easeProgress * 100, 100);
+        const flightAreaHeight = flightArea.clientHeight;
+        // Устанавливаем позицию в пикселях
+        flightStar.style.bottom = `${(starPositionPercent / 100) * (flightAreaHeight - 15)}px`;
+    }
+
+    if (flightMultiplier) {
+        flightMultiplier.textContent = crashGame.currentMultiplier.toFixed(2) + 'x';
+        // Обновляем цвет текста множителя
+        flightMultiplier.className = 'multiplier-label'; // Сброс классов
+        if (crashGame.currentMultiplier >= 10.0) {
+            flightMultiplier.classList.add('very-high');
+        } else if (crashGame.currentMultiplier >= 5.0) {
+            flightMultiplier.classList.add('high');
+        } else if (crashGame.currentMultiplier >= 2.0) {
+            flightMultiplier.classList.add('medium');
+        }
+    }
+    // --- КОНЕЦ НОВОГО КОДА ---
+
     // Обновляем отображение
     updateMultiplierDisplay(crashGame.currentMultiplier.toFixed(2) + 'x');
     updateChart(crashGame.currentMultiplier);
     updateMainActionButton();
-    
+
     // Проверяем, достигли ли целевого множителя
     if (crashGame.currentMultiplier >= crashGame.targetMultiplier) {
         crash();
@@ -1924,6 +1959,10 @@ function crash() {
         crashStateMachine.transitionTo('ERROR');
         return;
     }
+
+    // --- ДОБАВЬТЕ ЭТУ СТРОЧКУ ---
+    document.getElementById('flight-star')?.classList.add('crashed');
+    // -----------------------------
     
     crashGame.currentMultiplier = crashGame.targetMultiplier;
     
