@@ -1773,13 +1773,23 @@ function startCrashGameLoop() {
         crashGame.animationId = null;
     }
 
-    // --- ДОБАВЬТЕ ЭТИ 3 СТРОЧКИ ---
+    // --- СБРОС АНИМАЦИИ ЗВЕЗДЫ ---
     const flightStar = document.getElementById('flight-star');
+    const flightMultiplier = document.getElementById('flight-multiplier');
+    
     if (flightStar) {
         flightStar.classList.remove('crashed');
         flightStar.style.bottom = '-15px'; // Сброс позиции
+        flightStar.style.filter = 'drop-shadow(0 0 15px #ffd700) drop-shadow(0 0 25px #ffae00)'; // Сброс фильтра
+        flightStar.style.animation = 'starTwinkle 2s ease-in-out infinite'; // Возвращаем мигание
     }
-    // -----------------------------
+    
+    if (flightMultiplier) {
+        flightMultiplier.textContent = '1.00x';
+        flightMultiplier.className = 'multiplier-label'; // Сброс классов
+        flightMultiplier.style.animation = 'none'; // Сброс анимации
+    }
+    // --- КОНЕЦ СБРОСА ---
     
     // Сбрасываем состояние раунда
     crashGame.currentMultiplier = 1.00;
@@ -1852,7 +1862,7 @@ function animateMultiplier() {
     const easeProgress = calculateNonLinearProgress(progress, crashGame.targetMultiplier);
     crashGame.currentMultiplier = 1 + (crashGame.targetMultiplier - 1) * easeProgress;
 
-    // --- НОВЫЙ КОД ДЛЯ УПРАВЛЕНИЯ ЗВЕЗДОЙ ---
+    // --- УЛУЧШЕННЫЙ КОД ДЛЯ УПРАВЛЕНИЯ ЗВЕЗДОЙ ---
     const flightStar = document.getElementById('flight-star');
     const flightMultiplier = document.getElementById('flight-multiplier');
     const flightArea = document.querySelector('.flight-animation-area');
@@ -1861,13 +1871,21 @@ function animateMultiplier() {
         // Рассчитываем позицию звезды на линии (от 0 до 100%)
         const starPositionPercent = Math.min(easeProgress * 100, 100);
         const flightAreaHeight = flightArea.clientHeight;
-        // Устанавливаем позицию в пикселях
-        flightStar.style.bottom = `${(starPositionPercent / 100) * (flightAreaHeight - 15)}px`;
+        // Устанавливаем позицию в пикселях с плавным движением
+        const targetPosition = (starPositionPercent / 100) * (flightAreaHeight - 15);
+        flightStar.style.bottom = `${targetPosition}px`;
+        
+        // Добавляем эффект свечения при высоких множителях
+        if (crashGame.currentMultiplier >= 5.0) {
+            flightStar.style.filter = 'drop-shadow(0 0 20px #ffd700) drop-shadow(0 0 30px #ffae00) drop-shadow(0 0 40px #ffff00)';
+        } else if (crashGame.currentMultiplier >= 2.0) {
+            flightStar.style.filter = 'drop-shadow(0 0 15px #ffd700) drop-shadow(0 0 25px #ffae00)';
+        }
     }
 
     if (flightMultiplier) {
         flightMultiplier.textContent = crashGame.currentMultiplier.toFixed(2) + 'x';
-        // Обновляем цвет текста множителя
+        // Обновляем цвет текста множителя с анимацией
         flightMultiplier.className = 'multiplier-label'; // Сброс классов
         if (crashGame.currentMultiplier >= 10.0) {
             flightMultiplier.classList.add('very-high');
@@ -1876,8 +1894,13 @@ function animateMultiplier() {
         } else if (crashGame.currentMultiplier >= 2.0) {
             flightMultiplier.classList.add('medium');
         }
+        
+        // Добавляем эффект пульсации при росте
+        if (crashGame.currentMultiplier > 1.5) {
+            flightMultiplier.style.animation = 'multiplierPulse 1s ease-in-out infinite alternate';
+        }
     }
-    // --- КОНЕЦ НОВОГО КОДА ---
+    // --- КОНЕЦ УЛУЧШЕННОГО КОДА ---
 
     // Обновляем отображение
     updateMultiplierDisplay(crashGame.currentMultiplier.toFixed(2) + 'x');
@@ -1960,9 +1983,23 @@ function crash() {
         return;
     }
 
-    // --- ДОБАВЬТЕ ЭТУ СТРОЧКУ ---
-    document.getElementById('flight-star')?.classList.add('crashed');
-    // -----------------------------
+    // --- АНИМАЦИЯ ПАДЕНИЯ ЗВЕЗДЫ ---
+    const flightStar = document.getElementById('flight-star');
+    const flightMultiplier = document.getElementById('flight-multiplier');
+    
+    if (flightStar) {
+        flightStar.classList.add('crashed');
+        // Добавляем эффект взрыва
+        setTimeout(() => {
+            flightStar.style.filter = 'drop-shadow(0 0 5px #ff4444) drop-shadow(0 0 10px #ff0000)';
+        }, 100);
+    }
+    
+    if (flightMultiplier) {
+        flightMultiplier.classList.add('crashed');
+        flightMultiplier.style.animation = 'dangerPulse 0.5s ease-in-out infinite alternate';
+    }
+    // --- КОНЕЦ АНИМАЦИИ ПАДЕНИЯ ---
     
     crashGame.currentMultiplier = crashGame.targetMultiplier;
     
